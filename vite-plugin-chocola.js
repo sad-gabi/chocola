@@ -8,14 +8,14 @@ export function chocolaPlugin() {
     transform(code, id) {
       if (!id.endsWith('.chcl')) return;
 
-      // Extraer HTML
+      // GET HTML
       const htmlRegex = /html:\s*([\s\S]*)\}\)/m;
       let htmlMatch = code.match(htmlRegex);
       if (!htmlMatch) return;
 
       let htmlContent = htmlMatch[1];
 
-      // Reemplazar <Component>...</Component>
+      // INJECT COMPONENTS
       htmlContent = htmlContent.replace(
         /<([A-Z][a-zA-Z0-9]*)\s*([^>]*)\/?>/g,
         (_, name, props) => {
@@ -24,7 +24,7 @@ export function chocolaPlugin() {
         }
       );
 
-      // Convertir HTML en string template
+      // CONVERT HTML INTO STRING TEMPLATE
       const newCode = code.replace(htmlRegex, `html: \`${htmlContent}\` })`);
 
       return newCode;
