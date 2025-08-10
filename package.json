@@ -1,6 +1,6 @@
 {
   "name": "chocola",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A framework for creating user interfaces.",
   "main": "index.js",
   "scripts": {
