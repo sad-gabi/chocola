@@ -2,6 +2,7 @@
   "name": "chocola",
   "version": "1.0.4",
   "description": "A framework for creating user interfaces.",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -21,7 +22,7 @@
     "url": "https://github.com/sad-gabi/chocola"
   },
   "dependencies": {
-    "create-chocola-app": "^1.0.3"
+    "create-chocola-app": "^1.0.4"
   },
   "devDependencies": {
     "vite": "^7.1.1"
