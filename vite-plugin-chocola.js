@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { parseChocola } from './core/parser.js';
 
 export function chocolaPlugin() {
   return {
@@ -7,33 +8,7 @@ export function chocolaPlugin() {
     enforce: 'pre',
     transform(code, id) {
       if (!id.endsWith('.chcl')) return;
-
-      // GET HTML
-      const htmlRegex = /html:\s*([\s\S]*)\}\)/m;
-      let htmlMatch = code.match(htmlRegex);
-      if (!htmlMatch) return;
-
-      let htmlContent = htmlMatch[1];
-
-      // INJECT COMPONENTS
-      htmlContent = htmlContent.replace(
-        /<([A-Z][a-zA-Z0-9]*)\s*([^>]*)\/?>/g,
-        (_, name, props) => {
-          const propsObj = parseProps(props);
-          return `\${${name}(${JSON.stringify(propsObj)})}`;
-        }
-      );
-
-      // CONVERT HTML INTO STRING TEMPLATE
-      const newCode = code.replace(htmlRegex, `html: \`${htmlContent}\` })`);
-
-      return newCode;
+      return parseChocola(code, id);
     }
   };
-}
-
-function parseProps(str) {
-  const props = {};
-  str.replace(/(\w+)="([^"]*)"/g, (_, k, v) => props[k] = v);
-  return props;
 }
