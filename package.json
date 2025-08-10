@@ -16,12 +16,14 @@
   ],
   "author": "SadGabi <sadgabi20@gmail.com>",
   "license": "GPL-3.0-or-later",
-  "dependencies": {
-    "create-chocola-app": "1.0.1",
-    "vite": "^7.1.1"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/sad-gabi/chocola"
+  },
+  "dependencies": {
+    "create-chocola-app": "^1.0.2"
+  },
+  "devDependencies": {
+    "vite": "^7.1.1"
   }
 }
