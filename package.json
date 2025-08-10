@@ -22,7 +22,7 @@
     "url": "https://github.com/sad-gabi/chocola"
   },
   "dependencies": {
-    "create-chocola-app": "^1.0.5",
+    "create-chocola-app": "^1.0.6",
     "vite": "^7.1.1"
   }
 }
