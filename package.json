@@ -11,7 +11,15 @@
     "components",
     "ui"
   ],
-  "license": "ISC",
+  "homepage": "https://github.com/sad-gabi/chocola#readme",
+  "bugs": {
+    "url": "https://github.com/sad-gabi/chocola/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sad-gabi/chocola.git"
+  },
+  "license": "MIT",
   "author": "SadGabi",
   "type": "module",
   "main": "index.js",
