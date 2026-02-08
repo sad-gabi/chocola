@@ -1,0 +1,29 @@
+{
+  "name": "chocola",
+  "version": "1.2.6",
+  "description": "Chocola pipeline for web apps.",
+  "keywords": [
+    "web",
+    "app",
+    "pipeline",
+    "framework",
+    "gui",
+    "components",
+    "ui"
+  ],
+  "license": "ISC",
+  "author": "SadGabi",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "js-beautify": "^1.15.4",
+    "jsdom": "^27.4.0"
+  },
+  "devDependencies": {
+    "js-beautify": "^1.15.4"
+  }
+}
