@@ -40,6 +40,19 @@ export function processComponentElement(
         let script = instance.script && instance.script.toString();
         const letter = getNextLetter(letterState);
 
+        const ctxRegex = /ctx\s*=\s*({.*?})/;
+        const ctxMatch = script.match(ctxRegex);
+        let runtimeCtx = {};
+        if (ctxMatch) {
+          runtimeCtx = JSON.parse(ctxMatch[1].replace(/(\w+):/g, '"$1":'));
+        }
+        let ctxDef = "";
+        for (const [key, value] of Object.entries(runtimeCtx)) {
+          ctxDef += `ctx.${key} = ctx.${key}||${JSON.stringify(value)};\n`;
+        }
+        script = script.replace(ctxRegex, "ctx");
+        script = script.replace(/RUNTIME\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
+
         script = script.replace(/RUNTIME/g, `${letter}RUNTIME`);
 
         runtimeChunks.push(`
