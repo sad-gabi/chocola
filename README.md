@@ -70,7 +70,7 @@ Create a `chocola.config.json` file:
 ### 1. Define Your HTML Template
 
 > NOTE: Reactivity, component APIs and global variables are not implemented yet.
-> Any of this features displayed here are for future references and may be modified.
+> Any of these features displayed here are for future references and may be modified.
 
 Create `src/lib/html/counter.body.html`:
 
