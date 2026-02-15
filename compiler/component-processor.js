@@ -17,7 +17,8 @@ export function processComponentElement(
   loadedComponents,
   runtimeChunks,
   compIdColl,
-  letterState
+  letterState,
+  runtimeMap
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".js";
@@ -38,13 +39,16 @@ export function processComponentElement(
         firstChild.setAttribute("chid", compId);
 
         let script = instance.script && instance.script.toString();
-        const letter = getNextLetter(letterState);
 
         const ctxRegex = /ctx\s*=\s*({.*?})/;
         const ctxMatch = script.match(ctxRegex);
         let runtimeCtx = {};
         if (ctxMatch) {
-          runtimeCtx = JSON.parse(ctxMatch[1].replace(/(\w+):/g, '"$1":'));
+          try {
+            runtimeCtx = JSON.parse(ctxMatch[1].replace(/(\w+):/g, '"$1":'));
+          } catch (e) {
+            runtimeCtx = {};
+          }
         }
         let ctxDef = "";
         for (const [key, value] of Object.entries(runtimeCtx)) {
@@ -53,12 +57,19 @@ export function processComponentElement(
         script = script.replace(ctxRegex, "ctx");
         script = script.replace(/RUNTIME\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
 
-        script = script.replace(/RUNTIME/g, `${letter}RUNTIME`);
+        // Determine or create a single runtime function per component
+        let letterEntry = runtimeMap && runtimeMap.get(compName);
+        let letter;
+        if (!letterEntry) {
+          letter = getNextLetter(letterState);
+          script = script.replace(/RUNTIME/g, `${letter}RUNTIME`);
+          runtimeChunks.push(script);
+          runtimeMap && runtimeMap.set(compName, { letter });
+        } else {
+          letter = letterEntry.letter;
+        }
 
-        runtimeChunks.push(`
-const ${letter} = document.querySelector('[chid="${compId}"]');
-${script}
-${letter}RUNTIME(${letter}, ${JSON.stringify(ctx)});`);
+        runtimeChunks.push(`${letter}RUNTIME(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
       }
     }
     element.replaceWith(fragment);
@@ -82,9 +93,10 @@ export function processAllComponents(appElements, loadedComponents) {
   const runtimeChunks = [];
   const compIdColl = [];
   const letterState = { value: null };
+  const runtimeMap = new Map();
 
   appElements.forEach(el => {
-    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState);
+    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap);
   });
 
   const runtimeScript = runtimeChunks.join("\n");
