@@ -7,8 +7,8 @@ import path from "path";
 // ===== Component Loading =====
 
 /**
- * Discovers and loads all components from a library directory
- * Components are JavaScript files that start with an uppercase letter
+ * Discovers and loads all components from a library directory.
+ * Components are JavaScript files that start with an uppercase letter.
  * They must have a default export that is a function
  * @param {import("node:fs").PathLike} libDir - Directory containing component files
  * @returns {Promise<{
