@@ -16,7 +16,7 @@ Chocola is a lightweight, reactive component-based web framework that brings sim
 - **🔌 Component Lifecycle API** - Public APIs for mounting, manipulating, and removing components
 - **📦 Built-in Bundler** - Automatic compilation and optimization
 - **🔥 Hot Reload Development** - See changes instantly with the dev server
-- **🎨 Template Syntax** - Clean HTML templates with `${}` and `&{}` interpolation
+- **🎨 Template Syntax** - Clean HTML templates with `{}` and `&{}` interpolation
 - **⚙️ Zero Config** - Works out of the box with sensible defaults
 
 ## 🚀 Quick Start
@@ -76,8 +76,8 @@ Create `src/lib/html/counter.body.html`:
 
 ```html
 <div class="counter">
-  <h2>${ctx.title}</h2>
-  <!-- Use & instead of $ to set reactivity -->
+  <h2>{ctx.title}</h2>
+  <!-- Use & instead of  to set reactivity -->
   <p>Count: &{sfx.count}</p>
   <button class="increment">+</button>
   <button class="decrement">-</button>
@@ -165,7 +165,7 @@ In your `src/index.html`:
 
 ### Template (`body`)
 - Standard HTML with template variables
-- **Static context**: `${ctx.propertyName}`, `${sfx.propertyName}`  - rendered once at initialization
+- **Static context**: `{ctx.propertyName}`, `{sfx.propertyName}`  - rendered once at initialization
 - **Reactive state**: `&{sfx.propertyName}` - automatically updates on change
 - Clean separation of markup and logic
 

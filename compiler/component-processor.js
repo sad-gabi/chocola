@@ -28,7 +28,7 @@ export function processComponentElement(
 
   if (instance && instance.body) {
     let body = instance.body;
-    body = body.replace(/\$\{ctx\.(\w+)\}/g, (_, key) => ctx[key] || "");
+    body = body.replace(/\{ctx\.(\w+)\}/g, (_, key) => ctx[key] || "");
     const fragment = JSDOM.fragment(body);
     const firstChild = fragment.firstChild;
 
