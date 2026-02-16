@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import chalk from "chalk";
 import compile from "../compiler/index.js";
+import { loadConfig, resolvePaths } from "../compiler/config.js";
 import { getChocolaConfig } from "../utils.js";
 
 export async function serve(__rootdir) {
@@ -14,8 +15,12 @@ export async function serve(__rootdir) {
     port: 3000,
   }
 
-  const config = await getChocolaConfig(__rootdir);
-  const devConfig = config.dev;
+  let lastBuildTime = Date.now();
+
+  const fullConfig = await getChocolaConfig(__rootdir);
+  const config = await loadConfig(__rootdir);
+  const paths = resolvePaths(__rootdir, config);
+  const devConfig = fullConfig.dev;
 
   if (devConfig.hostname) { __config.hostname = devConfig.hostname }
   else { console.warn(chalk.bold.yellow("WARNING!"), `hostname not defined in chocola.config.json file: using default ${__config.hostname} hostname.`) }
@@ -23,7 +28,42 @@ export async function serve(__rootdir) {
   if (devConfig.port) { __config.port = devConfig.port }
   else { console.warn(chalk.bold.yellow("WARNING!"), `port not defined in chocola.config.json file: using default ${__config.port} port.`) }
 
+  const srcDir = paths.src;
+  const componentsDir = paths.components;
+
+  let compileTimeout;
+  const scheduleRecompile = () => {
+    clearTimeout(compileTimeout);
+    compileTimeout = setTimeout(async () => {
+      try {
+        await compile(__rootdir, { isHotReload: true });
+        lastBuildTime = Date.now();
+        console.log(chalk.green("✓"), "Hot reload: compiled successfully");
+      } catch (error) {
+        console.error(chalk.red("✗"), "Hot reload compilation failed:", error.message);
+      }
+    }, 300);
+  };
+
+
+  fs.watch(srcDir, { recursive: true }, (eventType, filename) => {
+    if (filename && !filename.includes("node_modules")) {
+      scheduleRecompile();
+    }
+  });
+  fs.watch(componentsDir, { recursive: true }, (eventType, filename) => {
+    if (filename && !filename.includes("node_modules")) {
+      scheduleRecompile();
+    }
+  });
+
   const server = http.createServer((req, res) => {
+    if (req.url === "/api/hot-reload") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ buildTime: lastBuildTime }));
+      return;
+    }
+
     let filePath = path.join(
       __outdir,
       req.url === "/" ? "index.html" : req.url
@@ -78,8 +118,33 @@ export async function serve(__rootdir) {
           res.end("Error interno: " + error.code);
         }
       } else {
-        res.writeHead(200, { "Content-Type": contentType });
-        res.end(content, "utf-8");
+        if (extname === ".html" || extname === ".htm") {
+          const hotReloadScript = `
+<script>
+(function() {
+  let lastBuildTime = ${lastBuildTime};
+  setInterval(async () => {
+    try {
+      const res = await fetch('/api/hot-reload');
+      const data = await res.json();
+      if (data.buildTime > lastBuildTime) {
+        lastBuildTime = data.buildTime;
+        console.log('[Hot Reload] Changes detected, reloading...');
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error('[Hot Reload] Check failed:', e);
+    }
+  }, 1000);
+})();
+</script>`;
+          const htmlWithReload = content.toString().replace('</body>', hotReloadScript + '</body>');
+          res.writeHead(200, { "Content-Type": contentType });
+          res.end(htmlWithReload, "utf-8");
+        } else {
+          res.writeHead(200, { "Content-Type": contentType });
+          res.end(content, "utf-8");
+        }
       }
     });
   });
