@@ -72,12 +72,12 @@ Create a `chocola.config.json` file:
 > NOTE: Reactivity, component APIs and global variables are not implemented yet.
 > Any of these features displayed here are for future references and may be modified.
 
-Create `src/lib/html/counter.body.html`:
+Create `src/lib/html/counter.html`:
 
 ```html
 <div class="counter">
   <h2>{ctx.title}</h2>
-  <!-- Use & instead of  to set reactivity -->
+  <!-- Use & to set reactivity -->
   <p>Count: &{sfx.count}</p>
   <button class="increment">+</button>
   <button class="decrement">-</button>
@@ -90,7 +90,7 @@ Create `src/lib/Counter.js`:
 
 ```javascript
 import { lib } from "chocola";
-import HTML from "./html/counter.body.html";
+import HTML from "./html/counter.html";
 
 function RUNTIME(self, ctx) {
   // Acces to component effects 
@@ -154,8 +154,7 @@ In your `src/index.html`:
   </head>
   <body>
     <app>
-      <!-- Set mutable sfx variables with & -->
-      <Counter ctx.title="My Counter" sfx.&initialCount="0"></Counter>
+      <Counter ctx.title="My Counter" sfx.initialCount="0"></Counter>
     </app>
   </body>
 </html>
@@ -260,7 +259,7 @@ Share state across your entire application:
 // In any component
 import * as globals from "path/to/globals.js";
 
-function RUNTIME(self, ctx, sfx) {
+function RUNTIME(self, ctx) {
   // Set global variables
   globals.userTheme = "dark";
   globals.notifications = [];
@@ -280,7 +279,7 @@ import { lib } from "chocola";
 import Counter from "./lib/Counter.js";
 
 // Mount a component programmatically in RUNTIME and/or EFFECTS
-function RUNTIME(self. ctx) {
+function RUNTIME(self, ctx) {
  const counterInstance = lib.mount(Counter)
    .defCtx({
       title: "Dynamic Counter",
@@ -325,7 +324,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dev.server(__dirname, "src", "dist");
+dev.server(__dirname);
 ```
 
 Run:
