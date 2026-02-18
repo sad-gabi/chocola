@@ -31,6 +31,19 @@ export function processComponentElement(
     let body = instance.body;
     body = body.replace(/\{ctx\.(\w+)\}/g, (_, key) => ctx[key] || "");
     const fragment = JSDOM.fragment(body);
+    const children = Array.from(fragment.querySelectorAll("*"));
+    children.forEach(child => {
+      if (child.hasAttribute("if")) {
+        const expr = child.getAttribute("if").slice(1, -1);
+        const fn = new Function("ctx", `return ${expr}`);
+        if (!fn(ctx)) child.style.display = "none";
+      }
+      if (child.hasAttribute("delif")) {
+        const expr = child.getAttribute("delif").slice(1, -1);
+        const fn = new Function("ctx", `return ${expr}`);
+        if (!fn(ctx)) child.remove();
+      }
+    });
     const firstChild = fragment.firstChild;
 
     if (firstChild && firstChild.nodeType === 1) {
