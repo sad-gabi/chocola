@@ -29,18 +29,24 @@ export function processComponentElement(
 
   if (instance && instance.body) {
     let body = instance.body;
-    body = body.replace(/\{ctx\.(\w+)\}/g, (_, key) => ctx[key] || "");
+    body = body.replace(
+      /(?<!\b(?:if|delif)=)\{ctx\.(\w+)\}/g,
+      (_, key) => ctx[key] || ""
+    );
     const fragment = JSDOM.fragment(body);
     const children = Array.from(fragment.querySelectorAll("*"));
     children.forEach(child => {
       if (child.hasAttribute("if")) {
+        console.log(ctx)
         const expr = child.getAttribute("if").slice(1, -1);
-        const fn = new Function("ctx", `return ${expr}`);
+        console.log(expr)
+        const fn = new Function("ctx", `if (${expr} === true) {return true} else {return ${expr} === '{true}'}`);
+        console.log(fn.toString())
         if (!fn(ctx)) child.style.display = "none";
       }
       if (child.hasAttribute("delif")) {
-        const expr = child.getAttribute("delif").slice(1, -1);
-        const fn = new Function("ctx", `return ${expr}`);
+        const expr = child.getAttribute("del-if").slice(1, -1);
+        const fn = new Function("ctx", `if (${expr} === true) {return true} else {return ${expr} === '{true}'}`);
         if (!fn(ctx)) child.remove();
       }
     });
