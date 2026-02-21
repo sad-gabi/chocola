@@ -28,7 +28,7 @@ export function processComponentElement(
   const instance = loadedComponents.get(compName);
   if (!instance || instance === undefined) return false;
 
-  if (instance && instance.body) {
+  if (instance.body) {
     let body = instance.body;
     body = body.replace(
       /(?<!\b(?:if|del-if)=)\{(\w+)\}/g,
