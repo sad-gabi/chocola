@@ -54,10 +54,17 @@ export async function loadWithAssets(filePath) {
  * @param {number} length - Desired length of the ID (default: 10)
  * @returns {string} - Unique random ID
  */
-export function genRandomId(collection, length = 10) {
-  const id = Math.random().toString(36).substring(2, length + 2);
+export function genRandomId(collection = null, length = 10, lettersOnly = false) {
+  let id;
+  if (lettersOnly) {
+    const letters = "abcdefghijklmnopqrstuvwxyz";
+    id = Array.from({ length }, () => letters[Math.floor(Math.random() * letters.length)]).join("");
+  } else {
+    id = Math.random().toString(36).substring(2, length + 2);
+  }
+  if (!collection) return id;
   if (collection.includes(id)) {
-    return genRandomId(collection, length);
+    return genRandomId(collection, length, lettersOnly);
   } else {
     collection.push(id);
     return id;

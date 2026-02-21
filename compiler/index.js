@@ -1,27 +1,21 @@
 import path from "path";
 import { promises as fs } from "fs";
 import chalk from "chalk";
-
-// Configuration
 import { loadConfig, resolvePaths } from "./config.js";
-
-// DOM Processing
 import {
     createDOM,
     validateAppContainer,
     getAppElements,
     getAssetLinks,
     appendRuntimeScript,
+    appendStylesheetLink,
     serializeDOM,
     writeHTMLOutput,
+    writeCSSOutput,
 } from "./dom-processor.js";
-
-// Component & Runtime Processing
 import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
-
-// Utilities & Pipeline
-import { throwError } from "./utils.js";
+import { genRandomId, throwError } from "./utils.js";
 import {
     copyResources,
     getComponents,
@@ -30,8 +24,6 @@ import {
     processStylesheet,
 } from "./pipeline.js";
 
-
-// ===== Logging & Banners =====
 
 const logSeparation = chalk.yellow(`
 ________________________________________________________________________
@@ -75,16 +67,12 @@ function logSuccess(outDirPath) {
     );
 }
 
-// ===== Directory Setup =====
-
 async function setupOutputDirectory(outDirPath, emptyOutDir) {
     if (emptyOutDir) {
         await fs.rm(outDirPath, { recursive: true, force: true });
         await fs.mkdir(outDirPath);
     }
 }
-
-// ===== Component Loading =====
 
 async function loadAndDisplayComponents(srcComponentsPath) {
     const foundComponents = await getComponents(srcComponentsPath);
@@ -102,8 +90,6 @@ async function loadAndDisplayComponents(srcComponentsPath) {
     return loadedComponents;
 }
 
-// ===== Asset Processing =====
-
 async function processAssets(doc, rootDir, srcDir, outDirPath) {
     const { stylesheets, icons } = getAssetLinks(doc);
     const fileIds = [];
@@ -117,8 +103,6 @@ async function processAssets(doc, rootDir, srcDir, outDirPath) {
     }
 }
 
-// ===== Main Compilation Function =====
-
 /**
  * Compiles a static build of your Chocola project from the directory provided.
  * @param {import("fs").PathLike} rootDir
@@ -131,23 +115,17 @@ export default async function runtime(rootDir, buildConfig) {
     const isHotReload = buildConfig?.isHotReload || null;
     !isHotReload && logBanner();
 
-    // Load Configuration
     const config = await loadConfig(rootDir);
     const paths = resolvePaths(rootDir, config);
     !isHotReload && console.log(logSeparation);
 
-    // Setup Output Directory
     await setupOutputDirectory(paths.outDir, config.emptyOutDir);
 
-    // Load Index File
     const indexFiles = await getSrcIndex(paths.src);
     const srcIndexContent = indexFiles.srcHtmlFile || indexFiles.srcChocoFile;
 
-    // Load Components
     const loadedComponents = await loadAndDisplayComponents(paths.components);
     !isHotReload && console.log(logSeparation);
-
-    // Create and Validate DOM
     !isHotReload && console.log(`       BUNDLING STATIC BUILD`);
     !isHotReload && console.log(chalk.bold.green(">"), "Creating Chocola static build in directory", chalk.green.underline(paths.outDir) + "\n");
     !isHotReload && console.log(logSeparation);
@@ -157,24 +135,22 @@ export default async function runtime(rootDir, buildConfig) {
     const appContainer = validateAppContainer(doc);
     const appElements = getAppElements(appContainer);
 
-    // Process Components
-    const { runtimeScript } = processAllComponents(appElements, loadedComponents);
-
-    // Generate Runtime File
+    const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents);
     const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
-
-    // Process Assets (stylesheets, icons)
     await processAssets(doc, rootDir, config.srcDir, paths.outDir);
 
-    // Finalize HTML
+    if (scopesCss) {
+        const fileName = "sc-" + genRandomId(null, 6) + ".css";
+        await writeCSSOutput(scopesCss, paths.outDir, fileName);
+        appendStylesheetLink(doc, fileName);
+    };
+
     appendRuntimeScript(doc, runtimeFilename);
     const html = await serializeDOM(dom);
     await writeHTMLOutput(html, paths.outDir);
 
-    // Copy Resources
     await copyResources(rootDir, config.srcDir, paths.outDir);
 
-    // Success Message
     !isHotReload && logSuccess(paths.outDir);
     isHotReload && console.log("Dev server updated");
 }
