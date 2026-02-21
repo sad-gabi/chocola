@@ -1,5 +1,9 @@
 # Chocola Changelog
 
+## 1.3.6 (Feb 21, 2026)
+
+- Added CSS scoping for components: all scoped CSS is saved insida a `sc-${randomId}.css` file in build.
+
 ## 1.3.5 (Feb 20, 2026)
 
 - Removed packed `.tgz` files that were uploaded to the NPM registry.
