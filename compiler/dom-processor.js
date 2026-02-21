@@ -43,10 +43,8 @@ export function getAppElements(appContainer) {
 export function extractContextFromElement(element) {
   const ctx = {};
   for (const attr of element.attributes) {
-    if (attr.name.startsWith("ctx.")) {
-      const key = attr.name.slice(4);
-      ctx[key] = attr.value;
-    }
+    const key = attr.name;
+    ctx[key] = attr.value;
   }
   return ctx;
 }
