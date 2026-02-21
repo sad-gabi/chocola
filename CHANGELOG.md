@@ -1,5 +1,9 @@
 # Chocola Changelog
 
+## 1.3.5 (Feb 20, 2026)
+
+- Removed packed `.tgz` files that were uploaded to the NPM registry.
+
 ## 1.3.4 (Feb 20, 2026)
 
 ### CTX Handling
@@ -12,9 +16,10 @@
 
 - Removed `chocola/types` submodule. Will be replaced with TypeScript support.
 
-### `if` Attribute Disposement
+### `if` and `del-if` Attributes Optimization
 
 - Now the compiler removes the `if` attribute for static conditional rendering.
+- Optimized `if` and `del-if` handling code.
 
 ---
 
