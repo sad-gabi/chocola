@@ -31,7 +31,7 @@ export function processComponentElement(
   if (instance && instance.body) {
     let body = instance.body;
     body = body.replace(
-      /(?<!\b(?:if|del-if)=)\{ctx\.(\w+)\}/g,
+      /(?<!\b(?:if|del-if)=)\{(\w+)\}/g,
       (_, key) => ctx[key] || ""
     );
     const fragment = JSDOM.fragment(body);
@@ -39,12 +39,12 @@ export function processComponentElement(
     children.forEach(child => {
       if (child.hasAttribute("if")) {
         const expr = child.getAttribute("if").slice(1, -1);
-        const fn = new Function("ctx", `if (${expr} === true) {return true} else {return ${expr} === '{true}'}`);
+        const fn = new Function("ctx", `if (ctx.${expr} === true) {return true} else {return ctx.${expr} === '{true}'}`);
         if (!fn(ctx)) child.style.display = "none";
       }
       if (child.hasAttribute("del-if")) {
         const expr = child.getAttribute("del-if").slice(1, -1);
-        const fn = new Function("ctx", `if (${expr} === true) {return true} else {return ${expr} === '{true}'}`);
+        const fn = new Function("ctx", `if (ctx.${expr} === true) {return true} else {return ctx.${expr} === '{true}'}`);
         if (!fn(ctx)) child.remove();
       }
     });
