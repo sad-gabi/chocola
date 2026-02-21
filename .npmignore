@@ -1,0 +1,6 @@
+node_modules/
+tests/
+CHANGELOG.md
+*.log
+package-lock.json
+.vscode/
