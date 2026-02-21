@@ -23,6 +23,7 @@ export function processComponentElement(
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".js";
   const ctx = extractContextFromElement(element);
+  const srcInnerHtml = element.innerHTML;
 
   const instance = loadedComponents.get(compName);
   if (!instance || instance === undefined) return false;
@@ -37,11 +38,8 @@ export function processComponentElement(
     const children = Array.from(fragment.querySelectorAll("*"));
     children.forEach(child => {
       if (child.hasAttribute("if")) {
-        console.log(ctx)
         const expr = child.getAttribute("if").slice(1, -1);
-        console.log(expr)
         const fn = new Function("ctx", `if (${expr} === true) {return true} else {return ${expr} === '{true}'}`);
-        console.log(fn.toString())
         if (!fn(ctx)) child.style.display = "none";
       }
       if (child.hasAttribute("del-if")) {
@@ -91,7 +89,14 @@ export function processComponentElement(
         runtimeChunks.push(`${letter}RUNTIME(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
       }
     }
+
+    const slotFragment = JSDOM.fragment(srcInnerHtml);
+    Array.from(fragment.querySelectorAll("slot")).forEach(slot => {
+      slot.replaceWith(slotFragment);
+    });
+
     element.replaceWith(fragment);
+
     return true;
   }
 
