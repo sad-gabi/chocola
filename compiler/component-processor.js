@@ -37,17 +37,18 @@ export function processComponentElement(
     const fragment = JSDOM.fragment(body);
     const children = Array.from(fragment.querySelectorAll("*"));
     children.forEach(child => {
-      if (child.hasAttribute("if")) {
-        const expr = child.getAttribute("if").slice(1, -1);
-        const fn = new Function("ctx", `if (ctx.${expr} === true) {return true} else {return ctx.${expr} === '{true}'}`);
-        if (!fn(ctx)) child.style.display = "none";
-        child.removeAttribute("if");
-      }
-      if (child.hasAttribute("del-if")) {
-        const expr = child.getAttribute("del-if").slice(1, -1);
-        const fn = new Function("ctx", `if (ctx.${expr} === true) {return true} else {return ctx.${expr} === '{true}'}`);
-        if (!fn(ctx)) child.remove();
-      }
+      ["if", "del-if"].forEach(statement => {
+        const statAtt = child.getAttribute(statement);
+        if (!statAtt) return;
+        const expr = statAtt.slice(1, -1);
+        const fn = new Function("ctx", `return ctx.${expr} === true || ctx.${expr} === '{true}'`);
+        if (!fn(ctx)) {
+          if (statement === "if") child.style.display = "none";
+          if (statement === "del-if") child.remove();
+        }
+
+        child.removeAttribute(statement);
+      });
     });
     const firstChild = fragment.firstChild;
 
