@@ -41,6 +41,7 @@ export function processComponentElement(
         const expr = child.getAttribute("if").slice(1, -1);
         const fn = new Function("ctx", `if (ctx.${expr} === true) {return true} else {return ctx.${expr} === '{true}'}`);
         if (!fn(ctx)) child.style.display = "none";
+        child.removeAttribute("if");
       }
       if (child.hasAttribute("del-if")) {
         const expr = child.getAttribute("del-if").slice(1, -1);
