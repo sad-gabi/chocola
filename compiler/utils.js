@@ -26,7 +26,6 @@ export function throwError(err) {
 export async function loadWithAssets(filePath) {
   let code = await fs.readFile(filePath, "utf8");
 
-  // Find all `import varName from "*.html"` or `import varName from "*.css"`
   const importRegex = /import\s+(\w+)\s+from\s+["'](.+?\.(html|css))["'];?/g;
 
   let match;
@@ -34,16 +33,13 @@ export async function loadWithAssets(filePath) {
     const varName = match[1];
     const relPath = match[2];
 
-    // Resolve relative path and read the asset file
     const absPath = path.resolve(path.dirname(filePath), relPath);
     let content = await fs.readFile(absPath, "utf8");
 
-    // Replace the import with a const assignment of the file contents
     const replacement = `const ${varName} = ${JSON.stringify(content)};`;
     code = code.replace(match[0], replacement);
   }
 
-  // Convert to data URL and import dynamically to avoid filesystem restrictions
   const dataUrl =
     "data:text/javascript;base64," +
     Buffer.from(code).toString("base64");

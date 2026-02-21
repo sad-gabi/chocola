@@ -74,7 +74,6 @@ export function processComponentElement(
         script = script.replace(ctxRegex, "ctx");
         script = script.replace(/RUNTIME\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
 
-        // Determine or create a single runtime function per component
         let letterEntry = runtimeMap && runtimeMap.get(compName);
         let letter;
         if (!letterEntry) {

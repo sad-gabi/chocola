@@ -4,8 +4,6 @@ import { readMyFile, checkFile } from "./fs.js";
 import { JSDOM } from "jsdom";
 import path from "path";
 
-// ===== Component Loading =====
-
 /**
  * Discovers and loads all components from a library directory.
  * Components are JavaScript files that start with an uppercase letter.
@@ -31,7 +29,6 @@ export async function getComponents(libDir) {
     }
 
     for (const comp of components) {
-      // Only load .js files that start with uppercase (component convention)
       if (!comp.endsWith(".js") || comp[0] !== comp[0].toUpperCase()) continue;
 
       componentsLib.push(comp);
@@ -45,7 +42,6 @@ export async function getComponents(libDir) {
 
       const instance = module.default();
 
-      // Load external body template if specified
       if (instance.bodyPath) {
         instance.body = await fs.readFile(
           path.resolve(libDir, instance.bodyPath),
@@ -61,8 +57,6 @@ export async function getComponents(libDir) {
     throwError(err);
   }
 }
-
-// ===== Index File Loading =====
 
 /**
  * Loads the project index file (HTML or .choco)
@@ -103,8 +97,6 @@ export async function getSrcIndex(srcPath) {
     throwError(".choco files are not supported yet");
   }
 }
-
-// ===== Asset Processing =====
 
 /**
  * Processes stylesheet links: copies CSS files to output and updates link href
@@ -162,12 +154,10 @@ export async function copyResources(rootDir, srcDir, outDirPath) {
     const newElements = Array.from(newDoc.window.document.querySelectorAll("*"));
 
     for (const el of newElements) {
-      // Skip LINK and SCRIPT tags as they're already processed
       if (el.tagName === "LINK" || el.tagName === "SCRIPT") continue;
 
       const src = el.getAttribute("src") || el.getAttribute("href");
 
-      // Only copy local resources, not external web links
       if (src && !isWebLink(src)) {
         const srcPath = path.join(rootDir, srcDir, src);
         const destPath = path.join(outDirPath, src);
