@@ -42,13 +42,6 @@ export async function getComponents(libDir) {
 
       const instance = module.default();
 
-      if (instance.bodyPath) {
-        instance.body = await fs.readFile(
-          path.resolve(libDir, instance.bodyPath),
-          "utf8"
-        );
-      }
-
       loadedComponents.set(comp.toLowerCase(), instance);
     }
 
