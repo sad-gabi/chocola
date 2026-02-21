@@ -1,3 +1,10 @@
+## 1.3.3 (Feb 20, 2026)
+
+### CTX Declaration Refactor
+
+- Now components CTX is declared as `propertyName` instead of `ctx.propertyName`.
+
+
 ## 1.3.2 (Feb 20, 2026)
 
 ### Inner HTML Rendering
