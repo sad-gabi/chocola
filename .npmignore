@@ -4,3 +4,4 @@ CHANGELOG.md
 *.log
 package-lock.json
 .vscode/
+docs/
