@@ -82,6 +82,28 @@ export function getAssetLinks(doc) {
 }
 
 /**
+ * Writes CSS to output directory
+ * @param {string} css
+ * @param {import("fs").PathLike} outDirPath
+ * @param {string} filename
+ */
+export async function writeCSSOutput(css, outDirPath, filename = "scopes.css") {
+  await fs.writeFile(path.join(outDirPath, filename), css);
+}
+
+/**
+ * Appends a stylesheet link element to document head
+ * @param {Document} doc
+ * @param {string} filename
+ */
+export function appendStylesheetLink(doc, filename) {
+  const linkEl = doc.createElement("link");
+  linkEl.rel = "stylesheet";
+  linkEl.href = "./" + filename;
+  doc.head.appendChild(linkEl);
+}
+
+/**
  * Appends a script element to document body
  * @param {Document} doc
  * @param {string} filename

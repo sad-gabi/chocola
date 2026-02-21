@@ -2,6 +2,21 @@ import { JSDOM } from "jsdom";
 import { extractContextFromElement } from "./dom-processor.js";
 import { genRandomId, incrementAlfabet } from "./utils.js";
 import chalk from "chalk";
+import beautify from "js-beautify";
+
+function scopeCss(cssString, cssId) {
+  return cssString.replace(/(^|\})([^{}]+)\{/g, (match, before, selector) => {
+    if (selector.trim().startsWith("@")) {
+      return match;
+    }
+    const scoped = selector
+      .split(",")
+      .map(sel => `.${cssId} ${sel.trim()}`)
+      .join(", ");
+    return `${before}${scoped}{`;
+  });
+}
+
 
 /**
  * Processes a single component element and inserts it into the DOM
@@ -18,7 +33,10 @@ export function processComponentElement(
   runtimeChunks,
   compIdColl,
   letterState,
-  runtimeMap
+  runtimeMap,
+  cssScopes,
+  cssScopesMap,
+  scopedStyles
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".js";
@@ -28,7 +46,7 @@ export function processComponentElement(
   const instance = loadedComponents.get(compName);
   if (!instance || instance === undefined) return false;
 
-  if (instance && instance.body) {
+  if (instance.body) {
     let body = instance.body;
     body = body.replace(
       /(?<!\b(?:if|del-if)=)\{(\w+)\}/g,
@@ -96,8 +114,18 @@ export function processComponentElement(
       slot.replaceWith(slotFragment);
     });
 
+    let style = instance.styles && instance.styles.toString();
+    if (style) {
+      let cssId = cssScopesMap && cssScopesMap.get(compName);
+      if (!cssId) {
+        cssId = genRandomId(cssScopes, 8, true);
+        cssScopesMap.set(compName, cssId);
+        fragment.firstChild.classList.add(cssId);
+      }
+      style = scopeCss(style, cssId);
+      scopedStyles.push(style);
+    }
     element.replaceWith(fragment);
-
     return true;
   }
 
@@ -112,22 +140,26 @@ export function processComponentElement(
  * @returns {{
  *   runtimeScript: string,
  *   hasComponents: boolean
+ *   scopesCss: CSSString
  * }}
  */
 export function processAllComponents(appElements, loadedComponents) {
-  const runtimeChunks = [];
-  const compIdColl = [];
-  const letterState = { value: null };
-  const runtimeMap = new Map();
+  let runtimeChunks = [];
+  let compIdColl = [];
+  let letterState = { value: null };
+  let runtimeMap = new Map();
+  let cssScopes = [];
+  let cssScopesMap = new Map();
+  let scopedStyles = [];
 
   appElements.forEach(el => {
-    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap);
+    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles);
   });
-
   const runtimeScript = runtimeChunks.join("\n");
   const hasComponents = runtimeChunks.length > 0;
+  const scopesCss = beautify.css(scopedStyles.join("\n"));
 
-  return { runtimeScript, hasComponents };
+  return { runtimeScript, hasComponents, scopesCss };
 }
 
 /**
