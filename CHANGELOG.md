@@ -1,5 +1,9 @@
 # Chocola Changelog
 
+## 1.3.7 (Feb 21, 2026)
+
+- Rewrote README to a shorter version with a direct link to documentation.
+
 ## 1.3.6 (Feb 21, 2026)
 
 - Added CSS scoping for components: all scoped CSS is saved insida a `sc-${randomId}.css` file in build.
