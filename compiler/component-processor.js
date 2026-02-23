@@ -17,6 +17,20 @@ function scopeCss(cssString, cssId) {
   });
 }
 
+function interpolateNode(node, ctxProxy) {
+  if (node.nodeType === 3) {
+    node.textContent = node.textContent.replace(/\{([^}]+)\}/g, (_, expr) => {
+      try {
+        return Function("ctx", `with(ctx) { return (${expr}); }`)(ctxProxy);
+      } catch {
+        return "";
+      }
+    });
+  } else {
+    node.childNodes.forEach(child => interpolateNode(child, ctxProxy));
+  }
+}
+
 
 /**
  * Processes a single component element and inserts it into the DOM
@@ -43,31 +57,47 @@ export function processComponentElement(
   const ctx = extractContextFromElement(element);
   const srcInnerHtml = element.innerHTML;
 
+  const ctxProxy = new Proxy(ctx, {
+    has() { return true; },
+    get(target, key) { return target[key]; }
+  });
+
   const instance = loadedComponents.get(compName);
   if (!instance || instance === undefined) return false;
 
   if (instance.body) {
     let body = instance.body;
-    body = body.replace(
-      /(?<!\b(?:if|del-if)=)\{(\w+)\}/g,
-      (_, key) => ctx[key] || ""
-    );
+
     const fragment = JSDOM.fragment(body);
     const children = Array.from(fragment.querySelectorAll("*"));
+
     children.forEach(child => {
+      const reservedAttrs = ["if", "del-if"];
+      Array.from(child.attributes).forEach(attribute => {
+        if (!attribute || attribute === undefined) return;
+        if (reservedAttrs.includes(attribute.name)) return;
+        attribute.value = attribute.value.replace(
+          /\{([^}]+)\}/g,
+          ctx[attribute.value.slice(1, -1)]
+        );
+      });
+
       ["if", "del-if"].forEach(statement => {
         const statAtt = child.getAttribute(statement);
         if (!statAtt) return;
         const expr = statAtt.slice(1, -1);
-        const fn = new Function("ctx", `return ctx.${expr} === true || ctx.${expr} === '{true}'`);
-        if (!fn(ctx)) {
+        const eva = ctxProxy[expr] ? ctxProxy[expr].slice(1, -1) : null;
+        const fn = new Function("ctx", `with(ctx) { return (${eva}); }`)(ctxProxy)
+        if (!fn) {
           if (statement === "if") child.style.display = "none";
           if (statement === "del-if") child.remove();
         }
-
         child.removeAttribute(statement);
       });
+
+      interpolateNode(child, ctxProxy)
     });
+
     const firstChild = fragment.firstChild;
 
     if (firstChild && firstChild.nodeType === 1) {
