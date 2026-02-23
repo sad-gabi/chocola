@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { extractContextFromElement } from "./dom-processor.js";
-import { genRandomId, incrementAlfabet } from "./utils.js";
+import { genRandomId, incrementAlfabet, throwError } from "./utils.js";
 import chalk from "chalk";
 import beautify from "js-beautify";
 
@@ -78,7 +78,7 @@ export function processComponentElement(
         if (reservedAttrs.includes(attribute.name)) return;
         attribute.value = attribute.value.replace(
           /\{([^}]+)\}/g,
-          ctx[attribute.value.slice(1, -1)]
+          (_, key) => ctx[key] ?? ""
         );
       });
 
