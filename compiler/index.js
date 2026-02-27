@@ -149,7 +149,7 @@ export default async function runtime(rootDir, buildConfig) {
     const html = await serializeDOM(dom);
     await writeHTMLOutput(html, paths.outDir);
 
-    await copyResources(rootDir, config.srcDir, paths.outDir);
+    await copyResources(rootDir, scopesCss, config.srcDir, paths.outDir);
 
     !isHotReload && logSuccess(paths.outDir);
     isHotReload && console.log("Dev server updated");

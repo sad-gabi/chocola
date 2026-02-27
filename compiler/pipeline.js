@@ -140,11 +140,12 @@ export async function processIcons(link, rootDir, srcDir, outDirPath) {
  * @param {import("fs").PathLike} outDirPath - Output directory path
  * @throws {Error} if resources cannot be copied
  */
-export async function copyResources(rootDir, srcDir, outDirPath) {
+export async function copyResources(rootDir, scopesCss, srcDir, outDirPath) {
   try {
     const newIndex = await fs.readFile(path.join(outDirPath, "index.html"), "utf8");
     const newDoc = new JSDOM(newIndex);
     const newElements = Array.from(newDoc.window.document.querySelectorAll("*"));
+    const inlinePathsRegex = /url\((.*?)\)/gi;
 
     for (const el of newElements) {
       if (el.tagName === "LINK" || el.tagName === "SCRIPT") continue;
@@ -157,6 +158,28 @@ export async function copyResources(rootDir, srcDir, outDirPath) {
 
         await fs.mkdir(path.dirname(destPath), { recursive: true });
         await fs.copyFile(srcPath, destPath);
+      }
+
+      const styles = el.getAttribute("style");
+
+      if (styles) {
+        let stylesMatch;
+        while ((stylesMatch = inlinePathsRegex.exec(styles)) !== null) {
+          let filePath = stylesMatch[1].trim();
+
+          if (
+            (filePath.startsWith('"') && filePath.endsWith('"')) ||
+            (filePath.startsWith("'") && filePath.endsWith("'"))
+          ) {
+            filePath = filePath.slice(1, -1);
+          }
+
+          const srcPath = path.join(rootDir, srcDir, filePath);
+          const destPath = path.join(outDirPath, filePath);
+
+          await fs.mkdir(path.dirname(destPath), { recursive: true });
+          await fs.copyFile(srcPath, destPath);
+        }
       }
     }
   } catch (err) {
