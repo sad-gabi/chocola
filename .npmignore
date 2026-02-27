@@ -6,3 +6,4 @@ package-lock.json
 .vscode/
 docs/
 LEAD.md
+*.tgz
