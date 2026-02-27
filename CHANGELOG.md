@@ -1,5 +1,9 @@
 # Chocola Changelog
 
+## 1.3.10 (Feb 26, 2026)
+
+- Removed debug logs from source code.
+
 ## 1.3.9 (Feb 26, 2026)
 
 - Added resources packaging for HTML inline styles.
