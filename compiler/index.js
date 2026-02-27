@@ -93,14 +93,17 @@ async function loadAndDisplayComponents(srcComponentsPath) {
 async function processAssets(doc, rootDir, srcDir, outDirPath) {
     const { stylesheets, icons } = getAssetLinks(doc);
     const fileIds = [];
+    let cssContents = [];
 
     for (const link of stylesheets) {
-        await processStylesheet(link, rootDir, srcDir, outDirPath, fileIds);
+        const css = await processStylesheet(link, rootDir, srcDir, outDirPath, fileIds);
+        cssContents.push(css);
     }
 
     for (const link of icons) {
         await processIcons(link, rootDir, srcDir, outDirPath, fileIds);
     }
+    return cssContents
 }
 
 /**
@@ -137,7 +140,8 @@ export default async function runtime(rootDir, buildConfig) {
 
     const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents);
     const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
-    await processAssets(doc, rootDir, config.srcDir, paths.outDir);
+    const globalCss = (await processAssets(doc, rootDir, config.srcDir, paths.outDir)).join("\n");
+    console.log(globalCss)
 
     if (scopesCss) {
         const fileName = "sc-" + genRandomId(null, 6) + ".css";
@@ -149,7 +153,7 @@ export default async function runtime(rootDir, buildConfig) {
     const html = await serializeDOM(dom);
     await writeHTMLOutput(html, paths.outDir);
 
-    await copyResources(rootDir, scopesCss, config.srcDir, paths.outDir);
+    await copyResources(rootDir, scopesCss, globalCss, config.srcDir, paths.outDir);
 
     !isHotReload && logSuccess(paths.outDir);
     isHotReload && console.log("Dev server updated");

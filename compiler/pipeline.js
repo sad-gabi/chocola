@@ -109,6 +109,8 @@ export async function processStylesheet(link, rootDir, srcDir, outDirPath, fileI
 
     await fs.writeFile(path.join(outDirPath, cssFileName), css);
     link.setAttribute("href", "./" + cssFileName);
+
+    return css;
   } catch (err) {
     throwError(err);
   }
@@ -132,6 +134,51 @@ export async function processIcons(link, rootDir, srcDir, outDirPath) {
   }
 }
 
+export function getCssAssets(css) {
+  const results = new Set();
+
+  const urlRegex = /url\(([^)]+)\)/gi;
+
+  const importStringRegex = /@import\s+["']([^"']+)["']/gi;
+
+  const importUrlRegex = /@import\s+url\(([^)]+)\)/gi;
+
+  const clean = (raw) => {
+    let p = raw.trim();
+
+    if (
+      (p.startsWith('"') && p.endsWith('"')) ||
+      (p.startsWith("'") && p.endsWith("'"))
+    ) {
+      p = p.slice(1, -1);
+    }
+
+    if (p.startsWith("data:")) return null;
+
+    return p;
+  };
+
+  let match;
+
+  while ((match = urlRegex.exec(css))) {
+    const p = clean(match[1]);
+    if (p) results.add(p);
+  }
+
+  while ((match = importStringRegex.exec(css))) {
+    const p = clean(match[1]);
+    if (p) results.add(p);
+  }
+
+  while ((match = importUrlRegex.exec(css))) {
+    const p = clean(match[1]);
+    if (p) results.add(p);
+  }
+
+  return [...results];
+}
+
+
 /**
  * Copies all local resources (images, fonts, etc.) to output directory
  * Excludes web links and script/link tags
@@ -140,7 +187,7 @@ export async function processIcons(link, rootDir, srcDir, outDirPath) {
  * @param {import("fs").PathLike} outDirPath - Output directory path
  * @throws {Error} if resources cannot be copied
  */
-export async function copyResources(rootDir, scopesCss, srcDir, outDirPath) {
+export async function copyResources(rootDir, scopesCss, globalCss, srcDir, outDirPath) {
   try {
     const newIndex = await fs.readFile(path.join(outDirPath, "index.html"), "utf8");
     const newDoc = new JSDOM(newIndex);
@@ -180,6 +227,21 @@ export async function copyResources(rootDir, scopesCss, srcDir, outDirPath) {
           await fs.mkdir(path.dirname(destPath), { recursive: true });
           await fs.copyFile(srcPath, destPath);
         }
+      }
+    }
+
+    console.log(globalCss)
+    const cssAssets = [...getCssAssets(scopesCss), ...getCssAssets(globalCss)];
+    console.log(cssAssets)
+    for (const assetPath of cssAssets) {
+      try {
+        const srcPath = path.join(rootDir, srcDir, assetPath);
+        const destPath = path.join(outDirPath, assetPath);
+
+        await fs.mkdir(path.dirname(destPath), { recursive: true });
+        await fs.copyFile(srcPath, destPath);
+      } catch (err) {
+        throwError(err)
       }
     }
   } catch (err) {
