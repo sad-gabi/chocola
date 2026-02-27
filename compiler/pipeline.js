@@ -230,9 +230,7 @@ export async function copyResources(rootDir, scopesCss, globalCss, srcDir, outDi
       }
     }
 
-    console.log(globalCss)
     const cssAssets = [...getCssAssets(scopesCss), ...getCssAssets(globalCss)];
-    console.log(cssAssets)
     for (const assetPath of cssAssets) {
       try {
         const srcPath = path.join(rootDir, srcDir, assetPath);

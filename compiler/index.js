@@ -141,7 +141,6 @@ export default async function runtime(rootDir, buildConfig) {
     const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents);
     const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
     const globalCss = (await processAssets(doc, rootDir, config.srcDir, paths.outDir)).join("\n");
-    console.log(globalCss)
 
     if (scopesCss) {
         const fileName = "sc-" + genRandomId(null, 6) + ".css";
