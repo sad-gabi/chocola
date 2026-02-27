@@ -87,8 +87,8 @@ export function processComponentElement(
         if (!statAtt) return;
         const expr = statAtt.slice(1, -1);
         const eva = ctxProxy[expr] ? ctxProxy[expr].slice(1, -1) : null;
-        const fn = new Function("ctx", `with(ctx) { return (${eva}); }`)(ctxProxy)
-        if (!fn) {
+        const fn = new Function("ctx", `{ return (${eva}); }`);
+        if (!fn()) {
           if (statement === "if") child.style.display = "none";
           if (statement === "del-if") child.remove();
         }
