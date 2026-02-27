@@ -1,5 +1,9 @@
 # Chocola Changelog
 
+## 1.3.8 (Feb 26, 2026)
+
+- Now Chocola evaluates JS expressions in content bindings.
+
 ## 1.3.7 (Feb 21, 2026)
 
 - Rewrote README to a shorter version with a direct link to documentation.
