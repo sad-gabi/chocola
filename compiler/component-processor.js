@@ -5,17 +5,62 @@ import chalk from "chalk";
 import beautify from "js-beautify";
 
 function scopeCss(cssString, cssId) {
-  return cssString.replace(/(^|\})([^{}]+)\{/g, (match, before, selector) => {
-    if (selector.trim().startsWith("@")) {
-      return match;
+  function findMatchingBrace(s, openIndex) {
+    let depth = 0;
+    for (let i = openIndex; i < s.length; i++) {
+      const ch = s[i];
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) return i;
+      }
     }
-    const scoped = selector
-      .split(",")
-      .map(sel => `.${cssId} ${sel.trim()}`)
-      .join(", ");
-    return `${before}${scoped}{`;
-  });
+    return s.length - 1;
+  }
+
+  function processBlock(str) {
+    str = str.replaceAll(":root", `.${cssId}`);
+
+    let out = "";
+    let i = 0;
+    while (i < str.length) {
+      const braceIndex = str.indexOf('{', i);
+      if (braceIndex === -1) {
+        out += str.slice(i);
+        break;
+      }
+      const header = str.substring(i, braceIndex);
+      const endBrace = findMatchingBrace(str, braceIndex);
+      const inner = str.substring(braceIndex + 1, endBrace);
+      const innerScoped = processBlock(inner);
+
+      if (header.trim().startsWith("@")) {
+        out += header + "{" + innerScoped + "}";
+      } else {
+        const selectors = header
+          .split(",")
+          .map(s => s.trim())
+          .filter(Boolean);
+        const scopedHeader = selectors.length > 0
+          ? selectors.map(sel => {
+              const s = sel.trim();
+              if (s.startsWith("." + cssId)) {
+                return s;
+              }
+              return `.${cssId} ${s}`;
+            }).join(", ")
+          : header;
+        out += scopedHeader + "{" + innerScoped + "}";
+      }
+
+      i = endBrace + 1;
+    }
+    return out;
+  }
+
+  return processBlock(cssString);
 }
+
 
 function interpolateNode(node, ctxProxy) {
   if (node.nodeType === 3) {
@@ -150,6 +195,8 @@ export function processComponentElement(
       if (!cssId) {
         cssId = genRandomId(cssScopes, 8, true);
         cssScopesMap.set(compName, cssId);
+      }
+      if (fragment.firstChild && fragment.firstChild.nodeType === 1) {
         fragment.firstChild.classList.add(cssId);
       }
       style = scopeCss(style, cssId);
