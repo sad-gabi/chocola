@@ -1,5 +1,14 @@
 # Chocola Changelog
 
+## 1.3.11 (Mar 02, 2026)
+
+### Added
+- Added support for using `:root` selector as a placeholder for a component root element.
+
+### Fixed
+- Now hash CSS classes are applied for all instances of a component and not just the first one.
+- Nested styles, as CSS inside `@media` rules, now are scoped.
+
 ## 1.3.10 (Feb 26, 2026)
 
 - Removed debug logs from source code.
