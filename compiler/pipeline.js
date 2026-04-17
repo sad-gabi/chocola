@@ -103,6 +103,7 @@ export async function getSrcIndex(srcPath) {
 export async function processStylesheet(link, rootDir, srcDir, outDirPath, fileIds) {
   try {
     const href = link.href;
+    if (href.startsWith("http://") || href.startsWith("https://")) return;
     const stylesheetPath = path.join(rootDir, srcDir, href);
     const css = await fs.readFile(stylesheetPath, { encoding: "utf8" });
     const cssFileName = "css-" + genRandomId(fileIds, 6) + ".css";
