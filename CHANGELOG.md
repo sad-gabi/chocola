@@ -1,5 +1,8 @@
 # Chocola Changelog
 
+## 1.4.1 (May 03, 2026)
+- Fixed CSS imports: now Chocola won't try to resolve `http:` and `https:` import URLs.
+
 ## 1.4.0 (May 03, 2026)
 - Added support for injecting components inside another using the `<SLOT>` element function.
 - Nested components (declared components inside another component body template) now render.
