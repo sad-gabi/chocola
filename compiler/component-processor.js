@@ -43,12 +43,12 @@ function scopeCss(cssString, cssId) {
           .filter(Boolean);
         const scopedHeader = selectors.length > 0
           ? selectors.map(sel => {
-              const s = sel.trim();
-              if (s.startsWith("." + cssId)) {
-                return s;
-              }
-              return `.${cssId} ${s}`;
-            }).join(", ")
+            const s = sel.trim();
+            if (s.startsWith("." + cssId)) {
+              return s;
+            }
+            return `.${cssId} ${s}`;
+          }).join(", ")
           : header;
         out += scopedHeader + "{" + innerScoped + "}";
       }
@@ -60,7 +60,6 @@ function scopeCss(cssString, cssId) {
 
   return processBlock(cssString);
 }
-
 
 function interpolateNode(node, ctxProxy) {
   if (node.nodeType === 3) {
@@ -75,7 +74,6 @@ function interpolateNode(node, ctxProxy) {
     node.childNodes.forEach(child => interpolateNode(child, ctxProxy));
   }
 }
-
 
 /**
  * Processes a single component element and inserts it into the DOM
@@ -95,10 +93,16 @@ export function processComponentElement(
   runtimeMap,
   cssScopes,
   cssScopesMap,
-  scopedStyles
+  scopedStyles,
+  renderChain = []
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".js";
+  const instance = loadedComponents.get(compName);
+
+  if (!instance || instance === undefined) return false;
+  if (renderChain && renderChain.includes(compName)) return false;
+
   const ctx = extractContextFromElement(element);
   const srcInnerHtml = element.innerHTML;
 
@@ -107,17 +111,21 @@ export function processComponentElement(
     get(target, key) { return target[key]; }
   });
 
-  const instance = loadedComponents.get(compName);
-  if (!instance || instance === undefined) return false;
-
   if (instance.body) {
     let body = instance.body;
 
     const fragment = JSDOM.fragment(body);
+
+    const slotFragment = JSDOM.fragment(srcInnerHtml);
+    Array.from(fragment.querySelectorAll("slot")).forEach(slot => {
+      slot.replaceWith(slotFragment);
+    });
+
     const children = Array.from(fragment.querySelectorAll("*"));
 
     children.forEach(child => {
       const reservedAttrs = ["if", "del-if"];
+
       Array.from(child.attributes).forEach(attribute => {
         if (!attribute || attribute === undefined) return;
         if (reservedAttrs.includes(attribute.name)) return;
@@ -126,6 +134,19 @@ export function processComponentElement(
           (_, key) => ctx[key] ?? ""
         );
       });
+
+      processComponentElement(
+        child,
+        loadedComponents,
+        runtimeChunks,
+        compIdColl,
+        letterState,
+        runtimeMap,
+        cssScopes,
+        cssScopesMap,
+        scopedStyles,
+        renderChain.concat(compName)
+      );
 
       ["if", "del-if"].forEach(statement => {
         const statAtt = child.getAttribute(statement);
@@ -183,11 +204,6 @@ export function processComponentElement(
         runtimeChunks.push(`${letter}RUNTIME(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
       }
     }
-
-    const slotFragment = JSDOM.fragment(srcInnerHtml);
-    Array.from(fragment.querySelectorAll("slot")).forEach(slot => {
-      slot.replaceWith(slotFragment);
-    });
 
     let style = instance.styles && instance.styles.toString();
     if (style) {

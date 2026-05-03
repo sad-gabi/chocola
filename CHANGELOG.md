@@ -1,5 +1,9 @@
 # Chocola Changelog
 
+## 1.4.0 (May 03, 2026)
+- Added support for injecting components inside another using the `<SLOT>` element function.
+- Nested components (declared components inside another component body template) now render.
+
 ## 1.3.11 (Mar 02, 2026)
 
 ### Added
