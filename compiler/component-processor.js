@@ -124,6 +124,17 @@ export function processComponentElement(
     const children = Array.from(fragment.querySelectorAll("*"));
 
     children.forEach(child => {
+      const reservedAttrs = ["if", "del-if"];
+
+      Array.from(child.attributes).forEach(attribute => {
+        if (!attribute || attribute === undefined) return;
+        if (reservedAttrs.includes(attribute.name)) return;
+        attribute.value = attribute.value.replace(
+          /\{([^}]+)\}/g,
+          (_, key) => ctx[key] ?? ""
+        );
+      });
+
       processComponentElement(
         child,
         loadedComponents,
@@ -136,16 +147,6 @@ export function processComponentElement(
         scopedStyles,
         renderChain.concat(compName)
       );
-
-      const reservedAttrs = ["if", "del-if"];
-      Array.from(child.attributes).forEach(attribute => {
-        if (!attribute || attribute === undefined) return;
-        if (reservedAttrs.includes(attribute.name)) return;
-        attribute.value = attribute.value.replace(
-          /\{([^}]+)\}/g,
-          (_, key) => ctx[key] ?? ""
-        );
-      });
 
       ["if", "del-if"].forEach(statement => {
         const statAtt = child.getAttribute(statement);
