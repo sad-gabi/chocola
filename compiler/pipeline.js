@@ -234,6 +234,7 @@ export async function copyResources(rootDir, scopesCss, globalCss, srcDir, outDi
     const cssAssets = [...getCssAssets(scopesCss), ...getCssAssets(globalCss)];
     for (const assetPath of cssAssets) {
       try {
+        if (assetPath.startsWith('http:') || assetPath.startsWith('https:')) continue;
         const srcPath = path.join(rootDir, srcDir, assetPath);
         const destPath = path.join(outDirPath, assetPath);
 
