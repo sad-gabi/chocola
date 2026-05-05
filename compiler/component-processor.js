@@ -94,7 +94,8 @@ export function processComponentElement(
   cssScopes,
   cssScopesMap,
   scopedStyles,
-  renderChain = []
+  renderChain = [],
+  staticCtxRegistry
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".js";
@@ -103,7 +104,13 @@ export function processComponentElement(
   if (!instance || instance === undefined) return false;
   if (renderChain && renderChain.includes(compName)) return false;
 
-  const ctx = extractContextFromElement(element);
+  let ctx;
+  if (staticCtxRegistry && staticCtxRegistry.has(element)) {
+    ctx = staticCtxRegistry.get(element);
+  } else {
+    ctx = extractContextFromElement(element);
+    staticCtxRegistry && staticCtxRegistry.set(element, ctx);
+  }
   const srcInnerHtml = element.innerHTML;
 
   const ctxProxy = new Proxy(ctx, {
@@ -145,7 +152,8 @@ export function processComponentElement(
         cssScopes,
         cssScopesMap,
         scopedStyles,
-        renderChain.concat(compName)
+        renderChain.concat(compName),
+        staticCtxRegistry
       );
 
       ["if", "del-if"].forEach(statement => {
@@ -244,9 +252,10 @@ export function processAllComponents(appElements, loadedComponents) {
   let cssScopes = [];
   let cssScopesMap = new Map();
   let scopedStyles = [];
+  let staticCtxRegistry = new Map();
 
   appElements.forEach(el => {
-    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles);
+    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry);
   });
   const runtimeScript = runtimeChunks.join("\n");
   const hasComponents = runtimeChunks.length > 0;
