@@ -5,5 +5,6 @@ CHANGELOG.md
 package-lock.json
 .vscode/
 docs/
+COMPILER_FLOW.md
 LEAD.md
 *.tgz
