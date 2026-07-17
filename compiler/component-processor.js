@@ -142,6 +142,27 @@ export function processComponentElement(
     const children = Array.from(fragment.querySelectorAll("*"));
 
     children.forEach(child => {
+      if (child.tagName.toLowerCase() === "void") {
+        let shouldRender = true;
+        for (const statement of ["if", "del-if"]) {
+          const att = child.getAttribute(statement);
+          if (!att) continue;
+          const expr = att.slice(1, -1);
+          const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+          const result = fn(ctxProxy);
+          if ((statement === "if" && !result) || (statement === "del-if" && result)) {
+            shouldRender = false;
+            break;
+          }
+        }
+        if (shouldRender) {
+          child.replaceWith(...child.children);
+        } else {
+          child.remove();
+        }
+        return;
+      }
+
       const reservedAttrs = ["if", "del-if"];
 
       Array.from(child.attributes).forEach(attribute => {
