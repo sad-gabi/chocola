@@ -41,6 +41,8 @@ export async function getComponents(libDir) {
       }
 
       const instance = module.default();
+      const compPath = path.join(libDir, comp);
+      instance.__sourceFile = compPath;
 
       loadedComponents.set(comp.toLowerCase(), instance);
     }
@@ -80,7 +82,7 @@ export async function getSrcIndex(srcPath) {
   if (htmlExists) {
     try {
       srcHtmlFile = await readMyFile(srcHtmlPath);
-      return { srcHtmlFile, srcChocoFile };
+      return { srcHtmlFile, srcChocoFile, srcPath: srcHtmlPath };
     } catch (err) {
       throwError(err);
     }

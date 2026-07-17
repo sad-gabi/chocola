@@ -86,6 +86,35 @@ function interpolateNode(node, ctxProxy) {
   }
 }
 
+function validateChainStructure(parent, sourceFile) {
+  const children = [...parent.children];
+  let chainActive = false;
+
+  for (const child of children) {
+    const hasIf = child.hasAttribute("if");
+    const hasDelIf = child.hasAttribute("del-if");
+    const hasElif = child.hasAttribute("elif");
+    const hasElse = child.hasAttribute("else");
+
+    if (hasElif || hasElse) {
+      if (!chainActive) {
+        throwError(`${sourceFile}: <${child.tagName.toLowerCase()}> has ${hasElif ? "elif" : "else"} without a preceding if/del-if sibling`);
+      }
+      if (hasElse) {
+        chainActive = false;
+      }
+    }
+
+    if (hasIf || hasDelIf) {
+      chainActive = true;
+    } else if (!hasElif && !hasElse) {
+      chainActive = false;
+    }
+
+    validateChainStructure(child, sourceFile);
+  }
+}
+
 /**
  * Processes a single component element and inserts it into the DOM
  * @param {Element} element
@@ -106,7 +135,8 @@ export function processComponentElement(
   cssScopesMap,
   scopedStyles,
   renderChain = [],
-  staticCtxRegistry
+  staticCtxRegistry,
+  sourceFile
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".js";
@@ -135,35 +165,80 @@ export function processComponentElement(
     const fragment = JSDOM.fragment(body);
 
     const slotFragment = JSDOM.fragment(srcInnerHtml);
+    if (sourceFile) {
+      validateChainStructure(slotFragment, sourceFile);
+    }
+    validateChainStructure(fragment, instance.__sourceFile || compName);
     Array.from(fragment.querySelectorAll("slot")).forEach(slot => {
       slot.replaceWith(slotFragment);
     });
 
-    const children = Array.from(fragment.querySelectorAll("*"));
+    const childEntries = Array.from(fragment.querySelectorAll("*")).map(el => ({
+      el,
+      parent: el.parentNode
+    }));
+    const condChains = new Map();
 
-    children.forEach(child => {
-      if (child.tagName.toLowerCase() === "void") {
-        let shouldRender = true;
-        for (const statement of ["if", "del-if"]) {
-          const att = child.getAttribute(statement);
-          if (!att) continue;
-          const expr = att.slice(1, -1);
-          const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
-          const result = fn(ctxProxy);
-          if ((statement === "if" && !result) || (statement === "del-if" && result)) {
-            shouldRender = false;
-            break;
-          }
+    childEntries.forEach(({ el: child, parent }) => {
+      if (!condChains.has(parent)) {
+        condChains.set(parent, { active: false, rendered: false });
+      }
+      const condChain = condChains.get(parent);
+
+      const hasIf = child.hasAttribute("if");
+      const hasDelIf = child.hasAttribute("del-if");
+      const hasElif = child.hasAttribute("elif");
+      const hasElse = child.hasAttribute("else");
+
+      if (hasElif || hasElse) {
+        if (!condChain.active) {
+          throwError(`${instance.__sourceFile || compName}: <${child.tagName.toLowerCase()}> has ${hasElif ? "elif" : "else"} without a preceding if/del-if sibling`);
         }
-        if (shouldRender) {
-          child.replaceWith(...child.children);
-        } else {
+        if (condChain.rendered) {
           child.remove();
+          if (hasElse) {
+            condChain.active = false;
+          }
+          return;
+        }
+      }
+
+      if (child.tagName.toLowerCase() === "void") {
+        if (hasElif || hasElse) {
+          if (hasElif) {
+            const expr = child.getAttribute("elif").slice(1, -1);
+            const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+            if (!fn(ctxProxy)) {
+              child.remove();
+              return;
+            }
+          }
+          child.replaceWith(...child.children);
+          condChain.rendered = true;
+          if (hasElse) {
+            condChain.active = false;
+          }
+        } else if (hasIf || hasDelIf) {
+          const attr = hasIf ? "if" : "del-if";
+          const expr = child.getAttribute(attr).slice(1, -1);
+          const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+          condChain.active = true;
+          if (fn(ctxProxy)) {
+            child.replaceWith(...child.children);
+            condChain.rendered = true;
+          } else {
+            child.remove();
+            condChain.rendered = false;
+          }
+        } else {
+          child.replaceWith(...child.children);
+          condChain.active = false;
+          condChain.rendered = false;
         }
         return;
       }
 
-      const reservedAttrs = ["if", "del-if"];
+      const reservedAttrs = ["if", "del-if", "elif", "else"];
 
       Array.from(child.attributes).forEach(attribute => {
         if (!attribute || attribute === undefined) return;
@@ -191,20 +266,49 @@ export function processComponentElement(
         cssScopesMap,
         scopedStyles,
         renderChain.concat(compName),
-        staticCtxRegistry
+        staticCtxRegistry,
+        instance.__sourceFile || compName
       );
 
-      ["if", "del-if"].forEach(statement => {
-        const statAtt = child.getAttribute(statement);
-        if (!statAtt) return;
-        const expr = statAtt.slice(1, -1);
+      if (hasIf) {
+        const expr = child.getAttribute("if").slice(1, -1);
         const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
-        if (!fn(ctxProxy)) {
-          if (statement === "if") child.style.display = "none";
-          if (statement === "del-if") child.remove();
+        condChain.active = true;
+        if (fn(ctxProxy)) {
+          condChain.rendered = true;
+        } else {
+          child.style.display = "none";
+          condChain.rendered = false;
         }
-        child.removeAttribute(statement);
-      });
+        child.removeAttribute("if");
+      } else if (hasDelIf) {
+        const expr = child.getAttribute("del-if").slice(1, -1);
+        const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+        condChain.active = true;
+        if (fn(ctxProxy)) {
+          condChain.rendered = true;
+        } else {
+          child.remove();
+          condChain.rendered = false;
+        }
+        child.removeAttribute("del-if");
+      } else if (hasElif) {
+        const expr = child.getAttribute("elif").slice(1, -1);
+        const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+        if (fn(ctxProxy)) {
+          condChain.rendered = true;
+        } else {
+          child.remove();
+        }
+        child.removeAttribute("elif");
+      } else if (hasElse) {
+        condChain.rendered = true;
+        condChain.active = false;
+        child.removeAttribute("else");
+      } else {
+        condChain.active = false;
+        condChain.rendered = false;
+      }
 
       interpolateNode(child, ctxProxy)
     });
@@ -281,7 +385,7 @@ export function processComponentElement(
  *   scopesCss: CSSString
  * }}
  */
-export function processAllComponents(appElements, loadedComponents) {
+export function processAllComponents(appElements, loadedComponents, pageSourceFile) {
   let runtimeChunks = [];
   let compIdColl = [];
   let letterState = { value: null };
@@ -292,7 +396,7 @@ export function processAllComponents(appElements, loadedComponents) {
   let staticCtxRegistry = new Map();
 
   appElements.forEach(el => {
-    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry);
+    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry, pageSourceFile);
   });
   const runtimeScript = runtimeChunks.join("\n");
   const hasComponents = runtimeChunks.length > 0;

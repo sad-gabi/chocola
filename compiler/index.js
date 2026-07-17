@@ -126,6 +126,7 @@ export default async function runtime(rootDir, buildConfig) {
 
     const indexFiles = await getSrcIndex(paths.src);
     const srcIndexContent = indexFiles.srcHtmlFile || indexFiles.srcChocoFile;
+    const pageSourcePath = indexFiles.srcPath;
 
     const loadedComponents = await loadAndDisplayComponents(paths.components);
     !isHotReload && console.log(logSeparation);
@@ -138,7 +139,7 @@ export default async function runtime(rootDir, buildConfig) {
     const appContainer = validateAppContainer(doc);
     const appElements = getAppElements(appContainer);
 
-    const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents);
+    const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents, pageSourcePath);
     const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
     const globalCss = (await processAssets(doc, rootDir, config.srcDir, paths.outDir)).join("\n");
 
