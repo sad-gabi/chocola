@@ -4,6 +4,23 @@ import { genRandomId, incrementAlfabet, throwError } from "./utils.js";
 import chalk from "chalk";
 import beautify from "js-beautify";
 
+function hasCombinator(sel) {
+  let depth = 0;
+  for (const ch of sel) {
+    if (ch === '[') depth++;
+    else if (ch === ']') depth--;
+    else if (depth === 0 && (ch === ' ' || ch === '>' || ch === '+' || ch === '~')) return true;
+  }
+  return false;
+}
+
+function scopeSelector(sel, cssId) {
+  const s = sel.trim();
+  if (s.startsWith("." + cssId)) return s;
+  if (hasCombinator(s)) return `.${cssId} ${s}`;
+  return `.${cssId}${s}, .${cssId} ${s}`;
+}
+
 function scopeCss(cssString, cssId) {
   function findMatchingBrace(s, openIndex) {
     let depth = 0;
@@ -42,13 +59,7 @@ function scopeCss(cssString, cssId) {
           .map(s => s.trim())
           .filter(Boolean);
         const scopedHeader = selectors.length > 0
-          ? selectors.map(sel => {
-            const s = sel.trim();
-            if (s.startsWith("." + cssId)) {
-              return s;
-            }
-            return `.${cssId} ${s}`;
-          }).join(", ")
+          ? selectors.map(sel => scopeSelector(sel, cssId)).join(", ")
           : header;
         out += scopedHeader + "{" + innerScoped + "}";
       }
