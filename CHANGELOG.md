@@ -1,5 +1,8 @@
 # Chocola Changelog
 
+## 1.4.2 (Jul 16, 2026)
+- Fixed JS expressions evaluations.
+
 ## 1.4.1 (May 03, 2026)
 - Fixed CSS imports: now Chocola won't try to resolve `http:` and `https:` import URLs.
 
