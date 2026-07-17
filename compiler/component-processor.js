@@ -138,7 +138,13 @@ export function processComponentElement(
         if (reservedAttrs.includes(attribute.name)) return;
         attribute.value = attribute.value.replace(
           /\{([^}]+)\}/g,
-          (_, key) => ctx[key] ?? ""
+          (_, expr) => {
+            try {
+              return Function("ctx", `with(ctx) { return (${expr}); }`)(ctxProxy);
+            } catch {
+              return "";
+            }
+          }
         );
       });
 
@@ -160,9 +166,8 @@ export function processComponentElement(
         const statAtt = child.getAttribute(statement);
         if (!statAtt) return;
         const expr = statAtt.slice(1, -1);
-        const eva = ctxProxy[expr] ? ctxProxy[expr].slice(1, -1) : null;
-        const fn = new Function("ctx", `{ return (${eva}); }`);
-        if (!fn()) {
+        const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+        if (!fn(ctxProxy)) {
           if (statement === "if") child.style.display = "none";
           if (statement === "del-if") child.remove();
         }
