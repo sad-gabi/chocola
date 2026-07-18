@@ -1,7 +1,6 @@
 import { promises as fs } from "fs";
-import { loadWithAssets, throwError, genRandomId, isWebLink } from "./utils.js";
+import { loadWithAssets, throwError, genRandomId } from "./utils.js";
 import { readMyFile, checkFile } from "./fs.js";
-import { JSDOM } from "jsdom";
 import path from "path";
 
 /**
@@ -130,6 +129,7 @@ export async function processStylesheet(link, rootDir, srcDir, outDirPath, fileI
 export async function processIcons(link, rootDir, srcDir, outDirPath) {
   try {
     const href = link.href;
+    if (href.startsWith("http://") || href.startsWith("https://")) return;
     const iconPath = path.join(rootDir, srcDir, href);
     await fs.copyFile(iconPath, path.join(outDirPath, href));
   } catch (err) {
@@ -137,116 +137,20 @@ export async function processIcons(link, rootDir, srcDir, outDirPath) {
   }
 }
 
-export function getCssAssets(css) {
-  const results = new Set();
-
-  const urlRegex = /url\(([^)]+)\)/gi;
-
-  const importStringRegex = /@import\s+["']([^"']+)["']/gi;
-
-  const importUrlRegex = /@import\s+url\(([^)]+)\)/gi;
-
-  const clean = (raw) => {
-    let p = raw.trim();
-
-    if (
-      (p.startsWith('"') && p.endsWith('"')) ||
-      (p.startsWith("'") && p.endsWith("'"))
-    ) {
-      p = p.slice(1, -1);
-    }
-
-    if (p.startsWith("data:")) return null;
-
-    return p;
-  };
-
-  let match;
-
-  while ((match = urlRegex.exec(css))) {
-    const p = clean(match[1]);
-    if (p) results.add(p);
-  }
-
-  while ((match = importStringRegex.exec(css))) {
-    const p = clean(match[1]);
-    if (p) results.add(p);
-  }
-
-  while ((match = importUrlRegex.exec(css))) {
-    const p = clean(match[1]);
-    if (p) results.add(p);
-  }
-
-  return [...results];
-}
-
-
 /**
- * Copies all local resources (images, fonts, etc.) to output directory
- * Excludes web links and script/link tags
- * @param {import("fs").PathLike} rootDir - Root project directory
- * @param {string} srcDir - Source directory name
+ * Copies the static/ directory from source to output.
+ * The entire static/ directory tree is copied recursively.
+ * Silently skips if static/ does not exist.
+ * @param {import("fs").PathLike} srcPath - Source directory path
  * @param {import("fs").PathLike} outDirPath - Output directory path
- * @throws {Error} if resources cannot be copied
  */
-export async function copyResources(rootDir, scopesCss, globalCss, srcDir, outDirPath) {
+export async function copyStaticDir(srcPath, outDirPath) {
+  const staticSrc = path.join(srcPath, "static");
+  const staticDest = path.join(outDirPath, "static");
   try {
-    const newIndex = await fs.readFile(path.join(outDirPath, "index.html"), "utf8");
-    const newDoc = new JSDOM(newIndex);
-    const newElements = Array.from(newDoc.window.document.querySelectorAll("*"));
-    const inlinePathsRegex = /url\((.*?)\)/gi;
-
-    for (const el of newElements) {
-      if (el.tagName === "LINK" || el.tagName === "SCRIPT") continue;
-
-      const src = el.getAttribute("src") || el.getAttribute("href");
-
-      if (src && !isWebLink(src)) {
-        const srcPath = path.join(rootDir, srcDir, src);
-        const destPath = path.join(outDirPath, src);
-
-        await fs.mkdir(path.dirname(destPath), { recursive: true });
-        await fs.copyFile(srcPath, destPath);
-      }
-
-      const styles = el.getAttribute("style");
-
-      if (styles) {
-        let stylesMatch;
-        while ((stylesMatch = inlinePathsRegex.exec(styles)) !== null) {
-          let filePath = stylesMatch[1].trim();
-
-          if (
-            (filePath.startsWith('"') && filePath.endsWith('"')) ||
-            (filePath.startsWith("'") && filePath.endsWith("'"))
-          ) {
-            filePath = filePath.slice(1, -1);
-          }
-
-          const srcPath = path.join(rootDir, srcDir, filePath);
-          const destPath = path.join(outDirPath, filePath);
-
-          await fs.mkdir(path.dirname(destPath), { recursive: true });
-          await fs.copyFile(srcPath, destPath);
-        }
-      }
-    }
-
-    const cssAssets = [...getCssAssets(scopesCss), ...getCssAssets(globalCss)];
-    for (const assetPath of cssAssets) {
-      try {
-        if (assetPath.startsWith('http:') || assetPath.startsWith('https:')) continue;
-        const srcPath = path.join(rootDir, srcDir, assetPath);
-        const destPath = path.join(outDirPath, assetPath);
-
-        await fs.mkdir(path.dirname(destPath), { recursive: true });
-        await fs.copyFile(srcPath, destPath);
-      } catch (err) {
-        throwError(err)
-      }
-    }
-  } catch (err) {
-    throwError(err);
+    await fs.access(staticSrc);
+    await fs.cp(staticSrc, staticDest, { recursive: true, force: true });
+  } catch {
+    // static/ directory doesn't exist — nothing to copy
   }
 }

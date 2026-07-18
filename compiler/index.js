@@ -1,4 +1,3 @@
-import path from "path";
 import { promises as fs } from "fs";
 import chalk from "chalk";
 import { loadConfig, resolvePaths } from "./config.js";
@@ -17,7 +16,7 @@ import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
 import { genRandomId, throwError } from "./utils.js";
 import {
-    copyResources,
+    copyStaticDir,
     getComponents,
     getSrcIndex,
     processIcons,
@@ -101,7 +100,7 @@ async function processAssets(doc, rootDir, srcDir, outDirPath) {
     }
 
     for (const link of icons) {
-        await processIcons(link, rootDir, srcDir, outDirPath, fileIds);
+        await processIcons(link, rootDir, srcDir, outDirPath);
     }
     return cssContents
 }
@@ -153,7 +152,7 @@ export default async function runtime(rootDir, buildConfig) {
     const html = await serializeDOM(dom);
     await writeHTMLOutput(html, paths.outDir);
 
-    await copyResources(rootDir, scopesCss, globalCss, config.srcDir, paths.outDir);
+    await copyStaticDir(paths.src, paths.outDir);
 
     !isHotReload && logSuccess(paths.outDir);
     isHotReload && console.log("Dev server updated");
