@@ -28,6 +28,7 @@ export async function loadWithAssets(filePath) {
 
   const importRegex = /import\s+(\w+)\s+from\s+["'](.+?\.(html|css))["'];?/g;
 
+  const replacements = [];
   let match;
   while ((match = importRegex.exec(code))) {
     const varName = match[1];
@@ -36,8 +37,11 @@ export async function loadWithAssets(filePath) {
     const absPath = path.resolve(path.dirname(filePath), relPath);
     let content = await fs.readFile(absPath, "utf8");
 
-    const replacement = `const ${varName} = ${JSON.stringify(content)};`;
-    code = code.replace(match[0], replacement);
+    replacements.push({ from: match[0], to: `const ${varName} = ${JSON.stringify(content)};` });
+  }
+
+  for (const { from, to } of replacements) {
+    code = code.replace(from, to);
   }
 
   const dataUrl =
