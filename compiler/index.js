@@ -139,7 +139,7 @@ export default async function runtime(rootDir, buildConfig) {
     const appContainer = validateAppContainer(doc);
     const appElements = getAppElements(appContainer);
 
-    const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents, pageSourcePath);
+    const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents, pageSourcePath, srcIndexContent);
     const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
     const globalCss = (await processAssets(doc, rootDir, config.srcDir, paths.outDir)).join("\n");
 

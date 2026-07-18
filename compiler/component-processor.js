@@ -86,9 +86,10 @@ function interpolateNode(node, ctxProxy) {
   }
 }
 
-function validateChainStructure(parent, sourceFile) {
+function validateChainStructure(parent, sourceFile, sourceContent, parentContent) {
   const children = [...parent.children];
   let chainActive = false;
+  const outerCounts = {};
 
   for (const child of children) {
     const hasIf = child.hasAttribute("if");
@@ -98,7 +99,43 @@ function validateChainStructure(parent, sourceFile) {
 
     if (hasElif || hasElse) {
       if (!chainActive) {
-        throwError(`${sourceFile}: <${child.tagName.toLowerCase()}> has ${hasElif ? "elif" : "else"} without a preceding if/del-if sibling`);
+        const tag = child.tagName.toLowerCase();
+        const attr = hasElif ? "elif" : "else";
+        let loc = sourceFile;
+        if (sourceContent && parentContent) {
+          const outer = child.outerHTML;
+          outerCounts[outer] = (outerCounts[outer] || 0) + 1;
+          let searchIdx = 0;
+          let hits = 0;
+          while ((searchIdx = parentContent.indexOf(outer, searchIdx)) !== -1) {
+            hits++;
+            if (hits === outerCounts[outer]) {
+              let line = parentContent.substring(0, searchIdx).split("\n").length;
+              if (sourceContent !== parentContent) {
+                const anchor = parentContent.trim().slice(0, 80);
+                const vars = [
+                  anchor,
+                  anchor.replace(/=""/g, ' '),
+                  anchor.replace(/=""/g, ''),
+                  anchor.replace(/="/g, "='").replace(/"/g, "'"),
+                ];
+                let anchorIdx = -1;
+                for (const v of vars) {
+                  anchorIdx = sourceContent.indexOf(v);
+                  if (anchorIdx !== -1) break;
+                }
+                if (anchorIdx !== -1) {
+                  const offset = sourceContent.substring(0, anchorIdx).split("\n").length;
+                  line = offset + line - 1;
+                }
+              }
+              loc = `${sourceFile}:${line}`;
+              break;
+            }
+            searchIdx += outer.length;
+          }
+        }
+        throwError(`${loc}\n    <${tag}> has ${attr} without a preceding if/del-if sibling`);
       }
       if (hasElse) {
         chainActive = false;
@@ -111,7 +148,7 @@ function validateChainStructure(parent, sourceFile) {
       chainActive = false;
     }
 
-    validateChainStructure(child, sourceFile);
+    validateChainStructure(child, sourceFile, sourceContent, parentContent);
   }
 }
 
@@ -136,7 +173,8 @@ export function processComponentElement(
   scopedStyles,
   renderChain = [],
   staticCtxRegistry,
-  sourceFile
+  sourceFile,
+  sourceContent
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".js";
@@ -166,9 +204,9 @@ export function processComponentElement(
 
     const slotFragment = JSDOM.fragment(srcInnerHtml);
     if (sourceFile) {
-      validateChainStructure(slotFragment, sourceFile);
+      validateChainStructure(slotFragment, sourceFile, sourceContent, srcInnerHtml);
     }
-    validateChainStructure(fragment, instance.__sourceFile || compName);
+    validateChainStructure(fragment, instance.__sourceFile || compName, body, body);
     Array.from(fragment.querySelectorAll("slot")).forEach(slot => {
       slot.replaceWith(slotFragment);
     });
@@ -267,7 +305,8 @@ export function processComponentElement(
         scopedStyles,
         renderChain.concat(compName),
         staticCtxRegistry,
-        instance.__sourceFile || compName
+        instance.__sourceFile || compName,
+        body
       );
 
       if (hasIf) {
@@ -385,7 +424,7 @@ export function processComponentElement(
  *   scopesCss: CSSString
  * }}
  */
-export function processAllComponents(appElements, loadedComponents, pageSourceFile) {
+export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent) {
   let runtimeChunks = [];
   let compIdColl = [];
   let letterState = { value: null };
@@ -396,7 +435,7 @@ export function processAllComponents(appElements, loadedComponents, pageSourceFi
   let staticCtxRegistry = new Map();
 
   appElements.forEach(el => {
-    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry, pageSourceFile);
+    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry, pageSourceFile, pageSourceContent);
   });
   const runtimeScript = runtimeChunks.join("\n");
   const hasComponents = runtimeChunks.length > 0;
