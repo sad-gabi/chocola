@@ -111,3 +111,30 @@ export function isWebLink(str) {
     return false;
   }
 }
+
+const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";
+const RBRACE_PH = "_%%CHOCOLA-RBRACE%%_";
+
+/**
+ * Replaces HTML entities for curly braces with placeholders before JSDOM parsing.
+ * This prevents JSDOM from decoding them into literal braces before binding processing.
+ * @param {string} html - Raw HTML content
+ * @returns {string} - HTML with curly brace entities replaced
+ */
+export function protectCurlyBraces(html) {
+  return html
+    .replace(/&(?:lbrace|#123|#x7B);/gi, LBRACE_PH)
+    .replace(/&(?:rcub|#125|#x7D);/gi, RBRACE_PH);
+}
+
+/**
+ * Restores curly brace placeholders back to literal characters.
+ * Called after binding processing is complete and before final output.
+ * @param {string} html - Serialized HTML with placeholders
+ * @returns {string} - HTML with literal curly braces restored
+ */
+export function restoreCurlyBraces(html) {
+  return html
+    .replace(/_%%CHOCOLA-LBRACE%%_/g, "{")
+    .replace(/_%%CHOCOLA-RBRACE%%_/g, "}");
+}

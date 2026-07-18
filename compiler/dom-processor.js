@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import { promises as fs } from "fs";
 import path from "path";
-import { throwError } from "./utils.js";
+import { throwError, protectCurlyBraces, restoreCurlyBraces } from "./utils.js";
 import { readMyFile } from "./fs.js";
 
 /**
@@ -10,7 +10,7 @@ import { readMyFile } from "./fs.js";
  * @returns {JSDOM}
  */
 export function createDOM(srcIndexContent) {
-  return new JSDOM(srcIndexContent);
+  return new JSDOM(protectCurlyBraces(srcIndexContent));
 }
 
 /**
@@ -56,7 +56,7 @@ export function extractContextFromElement(element) {
  */
 export async function serializeDOM(dom) {
   const beautify = (await import("js-beautify")).default;
-  const finalHtml = dom.serialize();
+  const finalHtml = restoreCurlyBraces(dom.serialize());
   return beautify.html(finalHtml, { indent_size: 2 });
 }
 

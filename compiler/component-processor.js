@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { extractContextFromElement } from "./dom-processor.js";
-import { genRandomId, incrementAlfabet, throwError } from "./utils.js";
+import { genRandomId, incrementAlfabet, throwError, protectCurlyBraces } from "./utils.js";
 import chalk from "chalk";
 import beautify from "js-beautify";
 
@@ -198,7 +198,7 @@ export function processComponentElement(
   });
 
   if (instance.body) {
-    let body = instance.body;
+    let body = protectCurlyBraces(instance.body);
 
     const fragment = JSDOM.fragment(body);
 
