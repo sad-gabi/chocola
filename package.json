@@ -1,6 +1,6 @@
 {
   "name": "chocola",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "The sweetest way to build reactive web apps",
   "keywords": [
     "web",
@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "chalk": "^5.6.2",
+    "chocola": "file:chocola-1.4.2.tgz",
     "js-beautify": "^1.15.4",
     "jsdom": "^27.4.0"
   },

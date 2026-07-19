@@ -1,5 +1,18 @@
 # Chocola Changelog
 
+## 1.5.0 (Jul 19, 2026)
+
+### Added
+- Assets now can be imported from a `src/static/` directory instead of based on `src` and `href` HTML attributes or `url()` CSS functions setting `bundle.assetImport: "static"` config.
+- Imports from HTML `href` and `src` attributes in `body`, and from CSS `url()` functions are still the default imports system, but now are deprecated and expected to be removed in Chocola 2. The `bundle.assetImport` value for static imports is `"legacy"`.
+- Added support for using curly braces HTML entities.
+- Added `elif` and `else` logical blocks; they must be siblings of an `if` block and arrenged in order.
+- Added `<void>` HTML tags as wrappers that will be replaced for its children when rendered, being able to apply logic blocks like `if` to their children.
+- Now scoped CSS selector also applies to the component's root element.
+
+### Fixed
+- Fixed an import resolution crash when a component's HTML template content was shorter than its import statement, which caused subsequent imports to be silently dropped during the build.
+
 ## 1.4.2 (Jul 16, 2026)
 - Fixed JS expressions evaluations.
 

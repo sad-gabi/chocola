@@ -20,13 +20,14 @@ export async function loadConfig(rootDir) {
   const outDir = bundleConfig.outDir || "dist";
   const libDir = bundleConfig.libDir || "lib";
   const emptyOutDir = bundleConfig.emptyOutDir !== false;
+  const assetImport = bundleConfig.assetImport || "legacy";
 
-  logConfigWarnings(bundleConfig, emptyOutDir);
+  logConfigWarnings(bundleConfig, emptyOutDir, assetImport);
 
-  return { srcDir, outDir, libDir, emptyOutDir };
+  return { srcDir, outDir, libDir, emptyOutDir, assetImport };
 }
 
-function logConfigWarnings(bundleConfig, emptyOutDir) {
+function logConfigWarnings(bundleConfig, emptyOutDir, assetImport) {
   if (!bundleConfig.srcDir) {
     console.warn(
       chalk.bold.yellow("WARNING!"),
@@ -49,6 +50,14 @@ function logConfigWarnings(bundleConfig, emptyOutDir) {
   }
 
   console.log(`> using emptyOutDir = ${emptyOutDir}`);
+
+  if (assetImport !== "static") {
+    console.warn(
+      chalk.bold.yellow("DEPRECATION WARNING!"),
+      'The legacy asset import system ("bundle.assetImport") will be removed in Chocola 2. ' +
+      'Set "bundle.assetImport": "static" in chocola.config.json and migrate your assets to src/static/.'
+    );
+  }
 }
 
 /**
