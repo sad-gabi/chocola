@@ -16,6 +16,7 @@ import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
 import { genRandomId, throwError } from "./utils.js";
 import {
+    copyResources,
     copyStaticDir,
     getComponents,
     getSrcIndex,
@@ -152,7 +153,11 @@ export default async function runtime(rootDir, buildConfig) {
     const html = await serializeDOM(dom);
     await writeHTMLOutput(html, paths.outDir);
 
-    await copyStaticDir(paths.src, paths.outDir);
+    if (config.assetImport === "static") {
+        await copyStaticDir(paths.src, paths.outDir);
+    } else {
+        await copyResources(rootDir, scopesCss, globalCss, config.srcDir, paths.outDir);
+    }
 
     !isHotReload && logSuccess(paths.outDir);
     isHotReload && console.log("Dev server updated");
