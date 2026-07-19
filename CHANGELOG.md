@@ -13,6 +13,10 @@
 ### Fixed
 - Fixed an import resolution crash when a component's HTML template content was shorter than its import statement, which caused subsequent imports to be silently dropped during the build.
 
+## Refactor
+
+- Improve component loading, errors, and assets
+
 ## 1.4.2 (Jul 16, 2026)
 - Fixed JS expressions evaluations.
 
