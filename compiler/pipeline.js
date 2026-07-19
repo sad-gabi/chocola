@@ -33,23 +33,28 @@ export async function getComponents(libDir) {
 
       componentsLib.push(comp);
 
-      const module = await loadWithAssets(path.join(libDir, comp));
+      let module;
+      try {
+        module = await loadWithAssets(path.join(libDir, comp));
 
-      if (typeof module.default !== "function") {
-        notDefComps.push(comp);
-        continue;
+        if (typeof module.default !== "function") {
+          notDefComps.push(comp);
+          continue;
+        }
+
+        const instance = module.default();
+        const compPath = path.join(libDir, comp);
+        instance.__sourceFile = compPath;
+
+        loadedComponents.set(comp.toLowerCase(), instance);
+      } catch (err) {
+        throwError(`Failed to load component "${comp}": ${err.message || err}`);
       }
-
-      const instance = module.default();
-      const compPath = path.join(libDir, comp);
-      instance.__sourceFile = compPath;
-
-      loadedComponents.set(comp.toLowerCase(), instance);
     }
 
     return { componentsLib, loadedComponents, notDefComps };
   } catch (err) {
-    throwError(err);
+    throwError(`Failed to load components from ${libDir}: ${err.message}`);
   }
 }
 
@@ -115,7 +120,7 @@ export async function processStylesheet(link, rootDir, srcDir, outDirPath, fileI
 
     return css;
   } catch (err) {
-    throwError(err);
+    throwError(`Failed to process stylesheet: ${err}`);
   }
 }
 
@@ -134,7 +139,7 @@ export async function processIcons(link, rootDir, srcDir, outDirPath) {
     const iconPath = path.join(rootDir, srcDir, href);
     await fs.copyFile(iconPath, path.join(outDirPath, href));
   } catch (err) {
-    throwError(err);
+    throwError(`Failed to copy icon: ${err}`);
   }
 }
 
@@ -172,6 +177,16 @@ export function getCssAssets(css) {
   return [...results];
 }
 
+function getComponentSource(el) {
+  let cur = el;
+  while (cur) {
+    const src = cur.getAttribute?.("data-ch-source");
+    if (src) return src;
+    cur = cur.parentElement;
+  }
+  return null;
+}
+
 /**
  * Copies all local resources (images, fonts, etc.) to output directory.
  * Excludes web links and script/link tags.
@@ -191,12 +206,21 @@ export async function copyResources(rootDir, scopesCss, globalCss, srcDir, outDi
     for (const el of newElements) {
       if (el.tagName === "LINK" || el.tagName === "SCRIPT") continue;
 
-      const src = el.getAttribute("src") || el.getAttribute("href");
+      const attrName = el.getAttribute("src") ? "src" : "href";
+      const src = el.getAttribute(attrName);
       if (src && !isWebLink(src) && !src.startsWith("#") && !src.startsWith("/")) {
         const srcPath = path.join(rootDir, srcDir, src);
         const destPath = path.join(outDirPath, src);
-        await fs.mkdir(path.dirname(destPath), { recursive: true });
-        await fs.copyFile(srcPath, destPath);
+        try {
+          await fs.mkdir(path.dirname(destPath), { recursive: true });
+          await fs.copyFile(srcPath, destPath);
+        } catch (err) {
+          throw new Error(
+            `Failed to copy resource referenced by <${el.tagName.toLowerCase()} ${attrName}="${src}">` +
+            (getComponentSource(el) ? ` in component "${getComponentSource(el)}"` : "") +
+            `: ${err.message || err}`
+          );
+        }
       }
 
       const styles = el.getAttribute("style");
@@ -212,8 +236,16 @@ export async function copyResources(rootDir, scopesCss, globalCss, srcDir, outDi
           }
           const srcPath = path.join(rootDir, srcDir, filePath);
           const destPath = path.join(outDirPath, filePath);
-          await fs.mkdir(path.dirname(destPath), { recursive: true });
-          await fs.copyFile(srcPath, destPath);
+          try {
+            await fs.mkdir(path.dirname(destPath), { recursive: true });
+            await fs.copyFile(srcPath, destPath);
+          } catch (err) {
+          throw new Error(
+            `Failed to copy resource from inline style on <${el.tagName.toLowerCase()}> url("${filePath}")` +
+            (getComponentSource(el) ? ` in component "${getComponentSource(el)}"` : "") +
+            `: ${err.message || err}`
+          );
+          }
         }
       }
     }
@@ -227,11 +259,13 @@ export async function copyResources(rootDir, scopesCss, globalCss, srcDir, outDi
         await fs.mkdir(path.dirname(destPath), { recursive: true });
         await fs.copyFile(srcPath, destPath);
       } catch (err) {
-        throwError(err)
+        throw new Error(
+          `Failed to copy CSS asset "${assetPath}" referenced from stylesheets: ${err.message || err}`
+        );
       }
     }
   } catch (err) {
-    throwError(err);
+    throw err;
   }
 }
 

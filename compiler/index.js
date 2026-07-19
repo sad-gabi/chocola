@@ -153,10 +153,14 @@ export default async function runtime(rootDir, buildConfig) {
     const html = await serializeDOM(dom);
     await writeHTMLOutput(html, paths.outDir);
 
-    if (config.assetImport === "static") {
-        await copyStaticDir(paths.src, paths.outDir);
-    } else {
-        await copyResources(rootDir, scopesCss, globalCss, config.srcDir, paths.outDir);
+    try {
+        if (config.assetImport === "static") {
+            await copyStaticDir(paths.src, paths.outDir);
+        } else {
+            await copyResources(rootDir, scopesCss, globalCss, config.srcDir, paths.outDir);
+        }
+    } catch (err) {
+        throwError(err.message || err);
     }
 
     !isHotReload && logSuccess(paths.outDir);

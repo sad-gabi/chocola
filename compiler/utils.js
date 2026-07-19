@@ -24,7 +24,12 @@ export function throwError(err) {
  * export default function Button() { return { body: template }; }
  */
 export async function loadWithAssets(filePath) {
-  let code = await fs.readFile(filePath, "utf8");
+  let code;
+  try {
+    code = await fs.readFile(filePath, "utf8");
+  } catch (err) {
+    throwError(`Failed to read component file "${filePath}": ${err.message || err}`);
+  }
 
   const importRegex = /import\s+(\w+)\s+from\s+["'](.+?\.(html|css))["'];?/g;
 
@@ -33,9 +38,17 @@ export async function loadWithAssets(filePath) {
   while ((match = importRegex.exec(code))) {
     const varName = match[1];
     const relPath = match[2];
-
     const absPath = path.resolve(path.dirname(filePath), relPath);
-    let content = await fs.readFile(absPath, "utf8");
+
+    let content;
+    try {
+      content = await fs.readFile(absPath, "utf8");
+    } catch (err) {
+      throwError(
+        `Failed to read imported file "${relPath}" (resolved to "${absPath}") ` +
+        `for variable "${varName}" in component "${filePath}": ${err.message || err}`
+      );
+    }
 
     replacements.push({ from: match[0], to: `const ${varName} = ${JSON.stringify(content)};` });
   }
@@ -48,8 +61,14 @@ export async function loadWithAssets(filePath) {
     "data:text/javascript;base64," +
     Buffer.from(code).toString("base64");
 
-  const mod = await import(dataUrl);
-  return mod;
+  try {
+    const mod = await import(dataUrl);
+    return mod;
+  } catch (err) {
+    throwError(
+      `Failed to evaluate component "${filePath}": ${err.message || err}`
+    );
+  }
 }
 
 /**

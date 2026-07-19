@@ -112,10 +112,10 @@ export async function serve(__rootdir) {
       if (error) {
         if (error.code === "ENOENT") {
           res.writeHead(404, { "Content-Type": "text/html" });
-          res.end("<h1>404 Not Found</h1>", "utf-8");
+          res.end("<h1>404 Not Found</h1><p>The requested resource was not found on this server.</p>", "utf-8");
         } else {
           res.writeHead(500);
-          res.end("Error interno: " + error.code);
+          res.end("Internal server error: " + error.code);
         }
       } else {
         if (extname === ".html" || extname === ".htm") {

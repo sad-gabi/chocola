@@ -12,6 +12,6 @@ export async function getChocolaConfig(__rootdir) {
         const config = await fs.readFile(path.join(__rootdir, "chocola.config.json"), "utf-8");
         return JSON.parse(config);
     } catch(err) {
-        throwError("An error ocurred while fetching the Chocola config file:\n" + err);
+        throwError("An error occurred while fetching the Chocola config file:\n" + err);
     }
 }

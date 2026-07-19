@@ -406,11 +406,16 @@ export function processComponentElement(
       style = scopeCss(style, cssId);
       scopedStyles.push(style);
     }
+
+    if (fragment.firstChild && fragment.firstChild.nodeType === 1) {
+      fragment.firstChild.setAttribute("data-ch-source", instance.__sourceFile || compName);
+    }
+
     element.replaceWith(fragment);
     return true;
   }
 
-  console.warn(chalk.yellow(`${compName} component could not be loaded`));
+  console.warn(chalk.yellow(`${compName} — component could not be loaded (missing body or styles export)`));
   return false;
 }
 
