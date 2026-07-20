@@ -1,6 +1,13 @@
 # Chocola Changelog
 
-## 1.5.0 (Jul 19, 2026)
+## 1.5.1 (Jul 19, 2026)
+
+- Fixed a critical bug that would make the `npm install` process to crash while installing v1.5.0.
+- Improved component loading, errors, and assets
+
+## 1.5.0 (Jul 19, 2026) [DEPRECATED]
+
+**DEPRECATION WARNING:** This version has a serious error that will cause the `npm install` process to crash. Please install a different version instead.
 
 ### Added
 - Assets now can be imported from a `src/static/` directory instead of based on `src` and `href` HTML attributes or `url()` CSS functions setting `bundle.assetImport: "static"` config.
