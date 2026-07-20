@@ -22,7 +22,9 @@
 
 ## Refactor
 
-- Improve component loading, errors, and assets
+- Improve component loading, errors, and assets.
+
+---
 
 ## 1.4.2 (Jul 16, 2026)
 - Fixed JS expressions evaluations.
@@ -34,12 +36,11 @@
 - Added support for injecting components inside another using the `<SLOT>` element function.
 - Nested components (declared components inside another component body template) now render.
 
+---
+
 ## 1.3.11 (Mar 02, 2026)
 
-### Added
 - Added support for using `:root` selector as a placeholder for a component root element.
-
-### Fixed
 - Now hash CSS classes are applied for all instances of a component and not just the first one.
 - Nested styles, as CSS inside `@media` rules, now are scoped.
 
@@ -70,33 +71,17 @@
 
 ## 1.3.4 (Feb 20, 2026)
 
-### CTX Handling
-
 - Fixed the following CTX handling:
   - HTML templates still needed `{ctx.name}` format. Changed to `{name}`.
   - `if` and `del-if` were being evaluated with `name` variables instead of `ctx.name`. Now fixed.
-
-### Removed `chocola/types`
-
 - Removed `chocola/types` submodule. Will be replaced with TypeScript support.
-
-### `if` and `del-if` Attributes Optimization
-
 - Now the compiler removes the `if` attribute for static conditional rendering.
 - Optimized `if` and `del-if` handling code.
 
----
-
 ## 1.3.3 (Feb 20, 2026)
-
-### CTX Declaration Refactor
 
 - Now components CTX is declared as `propertyName` instead of `ctx.propertyName`.
 
----
-
 ## 1.3.2 (Feb 20, 2026)
-
-### Inner HTML Rendering
 
 - Components now render inner HTML declared as children, replacing each `<SLOT>` element with the actual child markup.
