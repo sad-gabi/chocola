@@ -12,25 +12,29 @@ Chocola is a JavaScript library for creating web user interfaces.
   <button title={title}>{text}</button>
 
   <div class="main">
-    <div class="number">${count}</div>
+    <div class="number">{count}</div>
   </div>
 </div>
 ```
 
 ```js
-import HTML from "./html/counter.html";
-import CSS from "./css/counter.css";
+import body from "./html/counter.html";
+import styles from "./css/counter.css";
 
 function RUNTIME(self, ctx) {
-  self.querySelector("button").addEventListener("click", () => {
+  const btn = self.querySelector("button");
+  const number = self.querySelector(".number");
+
+  btn.addEventListener("click", () => {
     ctx.count++;
+    number.textContent = ctx.count;
   })
 }
 
 export default function Counter() {
   return {
-    body: HTML,
-    styles: CSS,
+    body,
+    styles,
     script: RUNTIME
   }
 }
