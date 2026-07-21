@@ -1,5 +1,10 @@
 # Chocola Changelog
 
+## 1.5.2 (Jul 20, 2026)
+
+- Updated npm package description, homepage, and funding.
+- Updated README.md
+
 ## 1.5.1 (Jul 19, 2026)
 
 - Fixed a critical bug that would make the `npm install` process to crash while installing v1.5.0.
