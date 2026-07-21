@@ -1,6 +1,7 @@
 node_modules/
 tests/
 CHANGELOG.md
+ROADMAP.md
 *.log
 package-lock.json
 .vscode/
