@@ -23,6 +23,10 @@
   "author": "SadGabi",
   "type": "module",
   "main": "index.js",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/sad-gabi"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
