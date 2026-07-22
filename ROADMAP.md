@@ -44,8 +44,9 @@ Hardening what V1 introduced, giving components a proper file format and adding 
 
 The state layer: `ctx`, typed properties, and everything that depends on them staying live in the browser.
 
-- Reactive components and state
-- Fine-tuning optimization features
+- Live `${foo)` bindings
+- Reactive state and lifecycle hooks
+- `$bake` and `$cast` HTML attributes and JS functions to define components statefulness
 
 ## V4 — Shipping
 **Status: Planned**
