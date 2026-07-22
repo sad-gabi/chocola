@@ -1,5 +1,6 @@
 ---
 title: Overview
+description: What is Chocola and why use it
 ---
 
 Chocola is a web framework designed for simplicity and modularity. It lets you build components by compiling JS modules into HTML templates, CSS, and JS logic, keeping your projects clean and optimized.
@@ -24,6 +25,4 @@ export default function Counter() {
 }
 ```
 
-Chocola handles the compilation for you, outputting a fully functional web app with vanilla JavaScript—no extra libraries needed.
-
-Next, you’ll learn how to set up a Chocola project and start baking your own sweet web apps.
+Chocola handles the compilation for you, outputting a fully functional web app with vanilla JavaScript — no extra libraries needed.

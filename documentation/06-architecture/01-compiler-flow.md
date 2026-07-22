@@ -1,4 +1,7 @@
-# Compiler Flow
+---
+title: Compiler flow
+description: How the Chocola compiler works internally
+---
 
 ## Entry Point
 
@@ -48,12 +51,12 @@ For each element inside `<app>`:
 
 1. **Match** — checks if tag name corresponds to a loaded component
 2. **Context** — extracts attributes as context (`ctx.*`)
-3. **Chain validation** — validates `if`/`elif`/`else`/`del-if` structure on both slot content and component body separately **before** slot replacement, throwing with `file:line` on violation
+3. **Chain validation** — validates `if`/`elif`/`else`/`del-if` structure on both slot content and component body separately before slot replacement, throwing with `file:line` on violation
 4. **Template** — renders component body via JSDOM fragment
 5. **Slots** — replaces `<slot>` elements with the original inner HTML
 6. **Attribute interpolation** — evaluates `{expr}` in attributes using `with(ctx)`
-7. **Conditionals** — evaluates `if`, `del-if`, `elif`, `else` attributes:
-   - `if={expr}` — hides element (display:none) when falsy
+7. **Conditionals** — evaluates `if`, `del-if`, `elif`, `else` attributes
+   - `if={expr}` — hides element (`display: none`) when falsy
    - `del-if={expr}` — removes element when falsy
    - `elif={expr}` — alternative condition in a chain
    - `else` — fallback in a chain
@@ -108,6 +111,6 @@ index.js
 - **Components**: ES modules with default export returning `{ body, script, styles, effects }`
 - **Asset inlining**: `.html`/`.css` imports in components are inlined at build time via `loadWithAssets`
 - **CSS Scoping**: Component styles are scoped by rewriting selectors under a unique CSS class ID. Both root and descendant matching via dual selectors (AND + descendant).
-- **Runtime scripts**: Components with dynamic behavior get a unique ID and a runtime call that re-attaches event listeners / effects on page load
-- **Conditional chains**: `if`/`del-if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with file:line error reporting
+- **Runtime scripts**: Components with dynamic behavior get a unique ID and a runtime call that re-attaches event listeners/effects on page load
+- **Conditional chains**: `if`/`del-if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with `file:line` error reporting
 - **Void elements**: `<void>` acts as a transparent wrapper that never renders itself; useful for conditional rendering without extra DOM nodes

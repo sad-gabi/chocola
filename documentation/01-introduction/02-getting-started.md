@@ -1,8 +1,7 @@
 ---
 title: Getting started
+description: Set up a Chocola project from scratch
 ---
-
-To get your first Chocola app up and running, follow these steps:
 
 ## 1. Set up your directory
 
@@ -45,11 +44,12 @@ npm install chocola
 }
 ```
 
-> DEPRECATION WARNING: `assetImport` also accepts the `"legacy"` value, an assets system that will import assets based on `src` and `href` HTML attributes and `url()` CSS functions, letting you import assets from anywhere in the project. You may find this system inefficient and even buggy in some cases. It's not recommended to use it, and it will be removed in V2.
+> DEPRECATION WARNING: `assetImport` also accepts the `"legacy"` value, an assets system that imports assets based on `src` and `href` HTML attributes and `url()` CSS functions. You may find this system inefficient and buggy in some cases. It will be removed in V2.
 
 ## 4. Create `index.js`
+
 ```js
-// fle: index.js
+// file: index.js
 import { app } from "chocola";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -61,6 +61,7 @@ app.build(__dirname);
 ```
 
 ## 5. Create `chocola.server.js`
+
 ```js
 // file: chocola.server.js
 import { dev } from "chocola";
@@ -74,16 +75,15 @@ dev.server(__dirname);
 ```
 
 ## 6. Initialize your index page
-Write something in your `src/index.html` index page.
-Remember to include an `<app>` element! That's where Chocola will apply its magic.
-For now, let's write something like this:
+
+Write something in your `src/index.html` index page. Remember to include an `<app>` element — that's where Chocola applies its magic.
+
 ```html
-<!-- file: index.html -->
+<!-- file: src/index.html -->
 <html>
   <head>
     <title>My Chocola App</title>
   </head>
-
   <body>
     <app>
       Hello World!
@@ -92,8 +92,4 @@ For now, let's write something like this:
 </html>
 ```
 
----
-
-Now you’re all set! Run `node chocola.server.js` to see your app in the browser. Next, we’ll learn how Chocola components work.
-
----
+Now you're all set! Run `node chocola.server.js` to see your app in the browser.
