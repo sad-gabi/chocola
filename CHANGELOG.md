@@ -1,5 +1,13 @@
 # Chocola Changelog
 
+## 2.0.0-alpha.1
+
+- Moved main Chocola imports:
+  - `{app}` to `chocola/compiler`
+  - `{dev}` to `chocola/dev`
+
+---
+
 ## 1.6.0 (Jul 23, 2026)
 
 ### Added features
