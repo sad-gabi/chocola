@@ -10,3 +10,4 @@ COMPILER_FLOW.md
 LEAD.md
 *.tgz
 documentation/
+.gitattributes
