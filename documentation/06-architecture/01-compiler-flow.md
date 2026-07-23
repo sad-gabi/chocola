@@ -19,13 +19,14 @@ description: How the Chocola compiler works internally
 | `outDir` | `"dist"` | Output directory |
 | `libDir` | `"lib"` | Components directory (inside `srcDir`) |
 | `emptyOutDir` | `true` | Whether to clean output before build |
+| `assetImport` | `"legacy"` | Asset import mode (`"legacy"` or `"static"`) |
 
 `resolvePaths()` resolves absolute paths for `outDir`, `src`, and `components`.
 
 ### 2. Setup (`compiler/index.js`)
 
 - Clears output directory if `emptyOutDir` is enabled
-- Loads the source index file (`index.html` or `.choco` from `srcDir`)
+- Loads the source index file (`index.html` from `srcDir`)
 - Discovers and loads all components from `src/lib/`
 
 ### 3. Component Discovery (`compiler/pipeline.js`)
@@ -42,7 +43,7 @@ description: How the Chocola compiler works internally
 
 - Creates a JSDOM instance from the index file
 - Validates an `<app>` root element exists
-- Extracts all child elements inside `<app>` for component processing
+- Extracts all descendant elements inside `<app>` for component processing
 - Extracts `<link>` elements (stylesheets, icons) for asset processing
 
 ### 5. Component Processing (`compiler/component-processor.js`)
