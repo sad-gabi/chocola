@@ -31,7 +31,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "exports": {
-    ".": "./index.js",
+    "./compiler": "./compiler/index.js",
+    "./dev": "./dev/index.js",
     "./types": "./types/index.js"
   },
   "dependencies": {
