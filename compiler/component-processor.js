@@ -135,7 +135,6 @@ function interpolateNode(node, ctxProxy) {
 function validateChainStructure(parent, sourceFile, sourceContent, parentContent) {
   const children = [...parent.children];
   let chainActive = false;
-  const outerCounts = {};
 
   for (const child of children) {
     const hasIf = child.hasAttribute("if");
@@ -148,37 +147,10 @@ function validateChainStructure(parent, sourceFile, sourceContent, parentContent
         const tag = child.tagName.toLowerCase();
         const attr = hasElif ? "elif" : "else";
         let loc = sourceFile;
-        if (sourceContent && parentContent) {
-          const outer = child.outerHTML;
-          outerCounts[outer] = (outerCounts[outer] || 0) + 1;
-          let searchIdx = 0;
-          let hits = 0;
-          while ((searchIdx = parentContent.indexOf(outer, searchIdx)) !== -1) {
-            hits++;
-            if (hits === outerCounts[outer]) {
-              let line = parentContent.substring(0, searchIdx).split("\n").length;
-              if (sourceContent !== parentContent) {
-                const anchor = parentContent.trim().slice(0, 80);
-                const vars = [
-                  anchor,
-                  anchor.replace(/=""/g, ' '),
-                  anchor.replace(/=""/g, ''),
-                  anchor.replace(/="/g, "='").replace(/"/g, "'"),
-                ];
-                let anchorIdx = -1;
-                for (const v of vars) {
-                  anchorIdx = sourceContent.indexOf(v);
-                  if (anchorIdx !== -1) break;
-                }
-                if (anchorIdx !== -1) {
-                  const offset = sourceContent.substring(0, anchorIdx).split("\n").length;
-                  line = offset + line - 1;
-                }
-              }
-              loc = `${sourceFile}:${line}`;
-              break;
-            }
-            searchIdx += outer.length;
+        if (sourceContent && sourceContent === parentContent) {
+          const idx = parentContent.indexOf(child.outerHTML);
+          if (idx !== -1) {
+            loc = `${sourceFile}:${parentContent.substring(0, idx).split("\n").length}`;
           }
         }
         throwError(`${loc}\n    <${tag}> has ${attr} without a preceding if/del-if sibling`);
