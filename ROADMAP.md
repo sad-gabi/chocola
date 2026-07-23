@@ -17,7 +17,7 @@ The core compiler and the minimum needed to build a real page with it.
 - `{foo}` props and contextful bindings
 - `<void>` transparent wrapper
 - `if/elif/else` HTML blocks for conditional display
-- `del-if/elif/else` HTML blocks for conditional rendering
+- `del:if/elif/else` HTML blocks for conditional rendering
 - CSS scoping
 - CSS imports
 - `:root` CSS selector as placeholder for the component root element
@@ -29,9 +29,13 @@ The core compiler and the minimum needed to build a real page with it.
 
 Hardening what V1 introduced, giving components a proper file format and adding dynamic rendering.
 
-- Client-side SPA generator
+### Breaking changes
+- Client-side static SPA generator
 - Declarative components imports
 - New HTML SFC (Single-File Components) system with tags: `<head>`, `<script>`, `<template>`, `<style>`
+- New `$runtime` replacing `RUNTIME` function.
+
+## New features
 - `for:each` and `switch/case` logic blocks
 - `<as:html></as:html>` blocks for raw HTML injection
 - `<const value="{foo}">` tag to define a local constant
@@ -44,7 +48,7 @@ Hardening what V1 introduced, giving components a proper file format and adding 
 
 The state layer: `ctx`, typed properties, and everything that depends on them staying live in the browser.
 
-- Live `${foo)` bindings
+- Live `${foo}` bindings
 - Reactive state and lifecycle hooks
 - `$bake` and `$cast` HTML attributes and JS functions to define components statefulness
 
