@@ -486,6 +486,7 @@ export function processAllComponents(appElements, loadedComponents, pageSourceFi
   let staticCtxRegistry = new Map();
 
   appElements.forEach(el => {
+    if (!el.isConnected) return;
     processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry, pageSourceFile, pageSourceContent);
   });
   const runtimeScript = runtimeChunks.join("\n");
