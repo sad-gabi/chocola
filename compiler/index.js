@@ -125,7 +125,7 @@ export default async function runtime(rootDir, buildConfig) {
     await setupOutputDirectory(paths.outDir, config.emptyOutDir);
 
     const indexFiles = await getSrcIndex(paths.src);
-    const srcIndexContent = indexFiles.srcHtmlFile || indexFiles.srcChocoFile;
+    const srcIndexContent = indexFiles.srcHtmlFile;
     const pageSourcePath = indexFiles.srcPath;
 
     const loadedComponents = await loadAndDisplayComponents(paths.components);

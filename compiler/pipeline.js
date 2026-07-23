@@ -70,31 +70,18 @@ export async function getComponents(libDir) {
  */
 export async function getSrcIndex(srcPath) {
   const srcHtmlPath = path.join(srcPath, "index.html");
-  const srcChocoPath = path.join(srcPath, "index.choco");
 
   const htmlExists = await checkFile(srcHtmlPath);
-  const chocoExists = await checkFile(srcChocoPath);
 
   let srcHtmlFile = null;
-  let srcChocoFile = null;
-
-  if (htmlExists && chocoExists) {
-    throwError(
-      "Can't have both .choco and .html source index files at a time: please remove one of the two"
-    );
-  }
 
   if (htmlExists) {
     try {
       srcHtmlFile = await readMyFile(srcHtmlPath);
-      return { srcHtmlFile, srcChocoFile, srcPath: srcHtmlPath };
+      return { srcHtmlFile, srcPath: srcHtmlPath };
     } catch (err) {
       throwError(err);
     }
-  }
-
-  if (chocoExists) {
-    throwError(".choco files are not supported yet");
   }
 }
 
