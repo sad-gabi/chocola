@@ -161,3 +161,16 @@ export function restoreCurlyBraces(html) {
     .replace(/_%%CHOCOLA-LBRACE%%_/g, "{")
     .replace(/_%%CHOCOLA-RBRACE%%_/g, "}");
 }
+
+const compiledCache = new Map();
+export function compileExpression(expr, useCtx) {
+  const key = useCtx ? `ctx:${expr}` : `raw:${expr}`;
+  let fn = compiledCache.get(key);
+  if (!fn) {
+    fn = useCtx
+      ? new Function("ctx", `with(ctx) { return (${expr}); }`)
+      : new Function(`"use strict"; return (${expr})`);
+    compiledCache.set(key, fn);
+  }
+  return fn;
+}

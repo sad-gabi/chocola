@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import { promises as fs } from "fs";
 import path from "path";
-import { throwError, protectCurlyBraces, restoreCurlyBraces } from "./utils.js";
+import { throwError, protectCurlyBraces, restoreCurlyBraces, compileExpression } from "./utils.js";
 import { readMyFile } from "./fs.js";
 
 /**
@@ -48,7 +48,7 @@ export function extractContextFromElement(element) {
     const matches = [...val.matchAll(/\{([^}]+)\}/g)];
     if (matches.length === 1 && matches[0][0] === val) {
       try {
-        ctx[key] = Function(`"use strict"; return (${matches[0][1]})`)();
+        ctx[key] = compileExpression(matches[0][1], false)();
         continue;
       } catch {}
     }

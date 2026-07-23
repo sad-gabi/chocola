@@ -14,7 +14,7 @@ import {
 } from "./dom-processor.js";
 import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
-import { genRandomId, throwError } from "./utils.js";
+import { genRandomId, throwError, compileExpression } from "./utils.js";
 import {
   copyResources,
   copyStaticDir,
@@ -174,7 +174,7 @@ export default async function runtime(rootDir, buildConfig) {
       if (hasIf) {
         const raw = child.getAttribute("if");
         const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-        const fn = new Function(`"use strict"; return (${expr})`);
+        const fn = compileExpression(expr, false);
         const result = fn();
         chainActive = true;
         if (result) {
@@ -187,7 +187,7 @@ export default async function runtime(rootDir, buildConfig) {
       } else if (hasDelIf) {
         const raw = getDelIfAttr(child);
         const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-        const fn = new Function(`"use strict"; return (${expr})`);
+        const fn = compileExpression(expr, false);
         const result = fn();
         chainActive = true;
         if (result) {
@@ -200,7 +200,7 @@ export default async function runtime(rootDir, buildConfig) {
       } else if (hasElif) {
         const raw = child.getAttribute("elif");
         const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-        const fn = new Function(`"use strict"; return (${expr})`);
+        const fn = compileExpression(expr, false);
         const result = fn();
         if (result) {
           chainRendered = true;

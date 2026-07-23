@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { extractContextFromElement } from "./dom-processor.js";
-import { genRandomId, incrementAlfabet, throwError, protectCurlyBraces } from "./utils.js";
+import { genRandomId, incrementAlfabet, throwError, protectCurlyBraces, compileExpression } from "./utils.js";
 import chalk from "chalk";
 import beautify from "js-beautify";
 
@@ -291,7 +291,7 @@ export function processComponentElement(
         if (hasElif || hasElse) {
           if (hasElif) {
             const expr = child.getAttribute("elif").slice(1, -1);
-            const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+            const fn = compileExpression(expr, true);
             if (!fn(ctxProxy)) {
               child.remove();
               return;
@@ -305,7 +305,7 @@ export function processComponentElement(
         } else if (hasIf || hasDelIf) {
           const raw = hasIf ? child.getAttribute("if") : getDelIfAttr(child);
           const expr = raw.slice(1, -1);
-          const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+          const fn = compileExpression(expr, true);
           condChain.active = true;
           if (fn(ctxProxy)) {
             child.replaceWith(...child.children);
@@ -331,7 +331,7 @@ export function processComponentElement(
           /\{([^}]+)\}/g,
           (_, expr) => {
             try {
-              return Function("ctx", `with(ctx) { return (${expr}); }`)(ctxProxy);
+              return compileExpression(expr, true)(ctxProxy);
             } catch {
               return "";
             }
@@ -357,7 +357,7 @@ export function processComponentElement(
 
       if (hasIf) {
         const expr = child.getAttribute("if").slice(1, -1);
-        const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+        const fn = compileExpression(expr, true);
         condChain.active = true;
         if (fn(ctxProxy)) {
           condChain.rendered = true;
@@ -368,7 +368,7 @@ export function processComponentElement(
         child.removeAttribute("if");
       } else if (hasDelIf) {
         const expr = getDelIfAttr(child).slice(1, -1);
-        const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+        const fn = compileExpression(expr, true);
         condChain.active = true;
         if (fn(ctxProxy)) {
           condChain.rendered = true;
@@ -379,7 +379,7 @@ export function processComponentElement(
         removeDelIfAttr(child);
       } else if (hasElif) {
         const expr = child.getAttribute("elif").slice(1, -1);
-        const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
+        const fn = compileExpression(expr, true);
         if (fn(ctxProxy)) {
           condChain.rendered = true;
         } else {
