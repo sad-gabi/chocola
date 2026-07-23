@@ -46,7 +46,7 @@ function logBanner() {
      ░  ▒    ▒ ░▒░ ░  ░ ░ ▒ ▒░   ░  ▒     ░ ░ ▒░ ░ ░ ▒  ░ ░   ▒▒ ░
      ░         ░  ░░ ░░ ░ ░ ░ ▒  ░        ░ ░ ░ ░ ▒    ░ ░    ░   ▒   
      ░ ░       ░  ░  ░    ░ ░  ░ ░          ░ ░      ░  ░     ░  ░
-    ░                         ░                                  
+     ░                         ░                                  
 
 
         `)
@@ -137,8 +137,76 @@ export default async function runtime(rootDir, buildConfig) {
     const dom = createDOM(srcIndexContent);
     const doc = dom.window.document;
     const appContainer = validateAppContainer(doc);
-    const appElements = getAppElements(appContainer);
 
+    function processPageConditionals(parent) {
+      const children = [...parent.children];
+      let chainActive = false;
+      let chainRendered = false;
+
+      for (const child of children) {
+        const hasIf = child.hasAttribute("if");
+        const hasDelIf = child.hasAttribute("del-if");
+        const hasElif = child.hasAttribute("elif");
+        const hasElse = child.hasAttribute("else");
+
+        if (hasElif || hasElse) {
+          if (!chainActive) continue;
+          if (chainRendered) { child.remove(); continue; }
+        }
+
+        if (hasIf) {
+          const raw = child.getAttribute("if");
+          const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
+          const fn = new Function(`"use strict"; return (${expr})`);
+          const result = fn();
+          console.log(`[page-conditional] if="${raw}" -> expr="${expr}" -> result=${result} (type: ${typeof result})`);
+          chainActive = true;
+          if (result) {
+            chainRendered = true;
+          } else {
+            child.style.display = "none";
+            chainRendered = false;
+          }
+          child.removeAttribute("if");
+        } else if (hasDelIf) {
+          const raw = child.getAttribute("del-if");
+          const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
+          const fn = new Function(`"use strict"; return (${expr})`);
+          const result = fn();
+          console.log(`[page-conditional] del-if="${raw}" -> expr="${expr}" -> result=${result} (type: ${typeof result})`);
+          chainActive = true;
+          if (result) {
+            chainRendered = true;
+          } else {
+            child.remove();
+            chainRendered = false;
+          }
+          child.removeAttribute("del-if");
+        } else if (hasElif) {
+          const raw = child.getAttribute("elif");
+          const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
+          const fn = new Function(`"use strict"; return (${expr})`);
+          const result = fn();
+          console.log(`[page-conditional] elif="${raw}" -> expr="${expr}" -> result=${result} (type: ${typeof result})`);
+          if (result) {
+            chainRendered = true;
+          } else {
+            child.remove();
+          }
+          child.removeAttribute("elif");
+        } else if (hasElse) {
+          chainRendered = true;
+          chainActive = false;
+          child.removeAttribute("else");
+        } else {
+          chainActive = false;
+          chainRendered = false;
+        }
+      }
+    }
+    processPageConditionals(appContainer);
+
+    const appElements = getAppElements(appContainer);
     const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents, pageSourcePath, srcIndexContent);
     const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
     const globalCss = (await processAssets(doc, rootDir, config.srcDir, paths.outDir)).join("\n");

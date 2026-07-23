@@ -44,7 +44,15 @@ export function extractContextFromElement(element) {
   const ctx = {};
   for (const attr of element.attributes) {
     const key = attr.name;
-    ctx[key] = attr.value;
+    const val = attr.value;
+    const matches = [...val.matchAll(/\{([^}]+)\}/g)];
+    if (matches.length === 1 && matches[0][0] === val) {
+      try {
+        ctx[key] = Function(`"use strict"; return (${matches[0][1]})`)();
+        continue;
+      } catch {}
+    }
+    ctx[key] = val;
   }
   return ctx;
 }
