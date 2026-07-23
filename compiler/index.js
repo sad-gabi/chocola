@@ -159,12 +159,11 @@ export default async function runtime(rootDir, buildConfig) {
           const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
           const fn = new Function(`"use strict"; return (${expr})`);
           const result = fn();
-          console.log(`[page-conditional] if="${raw}" -> expr="${expr}" -> result=${result} (type: ${typeof result})`);
           chainActive = true;
           if (result) {
             chainRendered = true;
           } else {
-            child.style.display = "none";
+            child.remove();
             chainRendered = false;
           }
           child.removeAttribute("if");
@@ -201,6 +200,10 @@ export default async function runtime(rootDir, buildConfig) {
         } else {
           chainActive = false;
           chainRendered = false;
+        }
+
+        if (child.parentNode) {
+          processPageConditionals(child);
         }
       }
     }
