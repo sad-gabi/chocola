@@ -1,5 +1,19 @@
 # Chocola Changelog
 
+## 1.6.0 (Jul 23, 2026)
+
+### Added features
+- Added `del:if` as a replacement for `del-if` and deprecated the last one [[#27]](https://github.com/sad-gabi/chocola/issues/27).
+- CSS animations scoping [[#30]](https://github.com/sad-gabi/chocola/issues/30).
+
+### Fixed bugs
+- A bug that would turn `{foo}` at `index.html` into strings [[#25]](https://github.com/sad-gabi/chocola/issues/25).
+- A bug that would make the compiler skip evaluating all Chocola syntax that were not direct children of the `<app>` container [[#29]](https://github.com/sad-gabi/chocola/issues/29).
+- A bug that would treat CSS non-selector at-rules as common rules and breake them [[#26]](https://github.com/sad-gabi/chocola/issues/26)
+
+### Optimization
+- Remove code for processing `.choco` files since they were never implemented and aren´t planned to be either [[#28]](https://github.com/sad-gabi/chocola/issues/28).
+
 ## 1.5.2 (Jul 20, 2026)
 
 - Updated npm package description, homepage, and funding.
