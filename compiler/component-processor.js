@@ -35,6 +35,8 @@ function scopeCss(cssString, cssId) {
     return s.length - 1;
   }
 
+  const scopeInnerAtRules = new Set(["@media", "@supports", "@container", "@layer"]);
+
   function processBlock(str) {
     str = str.replaceAll(":root", `.${cssId}`);
 
@@ -49,11 +51,16 @@ function scopeCss(cssString, cssId) {
       const header = str.substring(i, braceIndex);
       const endBrace = findMatchingBrace(str, braceIndex);
       const inner = str.substring(braceIndex + 1, endBrace);
-      const innerScoped = processBlock(inner);
 
       if (header.trim().startsWith("@")) {
-        out += header + "{" + innerScoped + "}";
+        const atKeyword = header.trim().split(/\s+/)[0].toLowerCase();
+        if (scopeInnerAtRules.has(atKeyword)) {
+          out += header + "{" + processBlock(inner) + "}";
+        } else {
+          out += header + "{" + inner + "}";
+        }
       } else {
+        const innerScoped = processBlock(inner);
         const selectors = header
           .split(",")
           .map(s => s.trim())
@@ -70,6 +77,23 @@ function scopeCss(cssString, cssId) {
   }
 
   return processBlock(cssString);
+}
+
+const warnedDeprecated = new Set();
+function hasDelIfAttr(el, sourceLoc) {
+  if (el.hasAttribute("del-if") && !el.hasAttribute("del:if") && !warnedDeprecated.has(sourceLoc)) {
+    warnedDeprecated.add(sourceLoc);
+    const name = sourceLoc ? sourceLoc.split(/[\\/]/).pop() : "unknown";
+    console.warn(chalk.yellow(`[deprecation] "del-if" is deprecated in ${chalk.cyan(name)} and will be removed in Chocola 2. Use "del:if" instead.`));
+  }
+  return el.hasAttribute("del-if") || el.hasAttribute("del:if");
+}
+function getDelIfAttr(el) {
+  return el.getAttribute("del:if") ?? el.getAttribute("del-if");
+}
+function removeDelIfAttr(el) {
+  el.removeAttribute("del-if");
+  el.removeAttribute("del:if");
 }
 
 function interpolateNode(node, ctxProxy) {
@@ -93,7 +117,7 @@ function validateChainStructure(parent, sourceFile, sourceContent, parentContent
 
   for (const child of children) {
     const hasIf = child.hasAttribute("if");
-    const hasDelIf = child.hasAttribute("del-if");
+    const hasDelIf = hasDelIfAttr(child, sourceFile);
     const hasElif = child.hasAttribute("elif");
     const hasElse = child.hasAttribute("else");
 
@@ -224,7 +248,7 @@ export function processComponentElement(
       const condChain = condChains.get(parent);
 
       const hasIf = child.hasAttribute("if");
-      const hasDelIf = child.hasAttribute("del-if");
+      const hasDelIf = hasDelIfAttr(child, instance.__sourceFile || compName);
       const hasElif = child.hasAttribute("elif");
       const hasElse = child.hasAttribute("else");
 
@@ -257,8 +281,8 @@ export function processComponentElement(
             condChain.active = false;
           }
         } else if (hasIf || hasDelIf) {
-          const attr = hasIf ? "if" : "del-if";
-          const expr = child.getAttribute(attr).slice(1, -1);
+          const raw = hasIf ? child.getAttribute("if") : getDelIfAttr(child);
+          const expr = raw.slice(1, -1);
           const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
           condChain.active = true;
           if (fn(ctxProxy)) {
@@ -276,7 +300,7 @@ export function processComponentElement(
         return;
       }
 
-      const reservedAttrs = ["if", "del-if", "elif", "else"];
+      const reservedAttrs = ["if", "del-if", "del:if", "elif", "else"];
 
       Array.from(child.attributes).forEach(attribute => {
         if (!attribute || attribute === undefined) return;
@@ -321,7 +345,7 @@ export function processComponentElement(
         }
         child.removeAttribute("if");
       } else if (hasDelIf) {
-        const expr = child.getAttribute("del-if").slice(1, -1);
+        const expr = getDelIfAttr(child).slice(1, -1);
         const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);
         condChain.active = true;
         if (fn(ctxProxy)) {
@@ -330,7 +354,7 @@ export function processComponentElement(
           child.remove();
           condChain.rendered = false;
         }
-        child.removeAttribute("del-if");
+        removeDelIfAttr(child);
       } else if (hasElif) {
         const expr = child.getAttribute("elif").slice(1, -1);
         const fn = new Function("ctx", `with(ctx) { return (${expr}); }`);

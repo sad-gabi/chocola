@@ -138,6 +138,23 @@ export default async function runtime(rootDir, buildConfig) {
     const doc = dom.window.document;
     const appContainer = validateAppContainer(doc);
 
+    const warnedDeprecated = new Set();
+    function hasDelIfAttr(el, sourceLoc) {
+      if (el.hasAttribute("del-if") && !el.hasAttribute("del:if") && !warnedDeprecated.has(sourceLoc)) {
+        warnedDeprecated.add(sourceLoc);
+        const name = sourceLoc ? sourceLoc.split(/[\\/]/).pop() : "unknown";
+        console.warn(chalk.yellow(`[deprecation] "del-if" is deprecated in ${chalk.cyan(name)} and will be removed in Chocola 2. Use "del:if" instead.`));
+      }
+      return el.hasAttribute("del-if") || el.hasAttribute("del:if");
+    }
+    function getDelIfAttr(el) {
+      return el.getAttribute("del:if") ?? el.getAttribute("del-if");
+    }
+    function removeDelIfAttr(el) {
+      el.removeAttribute("del-if");
+      el.removeAttribute("del:if");
+    }
+
     function processPageConditionals(parent) {
       const children = [...parent.children];
       let chainActive = false;
@@ -145,7 +162,7 @@ export default async function runtime(rootDir, buildConfig) {
 
       for (const child of children) {
         const hasIf = child.hasAttribute("if");
-        const hasDelIf = child.hasAttribute("del-if");
+        const hasDelIf = hasDelIfAttr(child, pageSourcePath);
         const hasElif = child.hasAttribute("elif");
         const hasElse = child.hasAttribute("else");
 
@@ -168,11 +185,10 @@ export default async function runtime(rootDir, buildConfig) {
           }
           child.removeAttribute("if");
         } else if (hasDelIf) {
-          const raw = child.getAttribute("del-if");
+          const raw = getDelIfAttr(child);
           const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
           const fn = new Function(`"use strict"; return (${expr})`);
           const result = fn();
-          console.log(`[page-conditional] del-if="${raw}" -> expr="${expr}" -> result=${result} (type: ${typeof result})`);
           chainActive = true;
           if (result) {
             chainRendered = true;
@@ -180,13 +196,12 @@ export default async function runtime(rootDir, buildConfig) {
             child.remove();
             chainRendered = false;
           }
-          child.removeAttribute("del-if");
+          removeDelIfAttr(child);
         } else if (hasElif) {
           const raw = child.getAttribute("elif");
           const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
           const fn = new Function(`"use strict"; return (${expr})`);
           const result = fn();
-          console.log(`[page-conditional] elif="${raw}" -> expr="${expr}" -> result=${result} (type: ${typeof result})`);
           if (result) {
             chainRendered = true;
           } else {
