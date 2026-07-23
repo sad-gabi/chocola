@@ -50,7 +50,7 @@ npm install chocola
 
 ```js
 // file: index.js
-import { app } from "chocola";
+import { app } from "chocola/compiler";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -64,7 +64,7 @@ app.build(__dirname);
 
 ```js
 // file: chocola.server.js
-import { dev } from "chocola";
+import { dev } from "chocola/dev";
 import path from "path";
 import { fileURLToPath } from "url";
 
