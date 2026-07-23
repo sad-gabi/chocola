@@ -80,8 +80,7 @@ export async function loadWithAssets(filePath) {
 export function genRandomId(collection = null, length = 10, lettersOnly = false) {
   let id;
   if (lettersOnly) {
-    const letters = "abcdefghijklmnopqrstuvwxyz";
-    id = Array.from({ length }, () => letters[Math.floor(Math.random() * letters.length)]).join("");
+    id = Array.from({ length }, () => ID_LETTERS[Math.floor(Math.random() * ID_LETTERS.length)]).join("");
   } else {
     id = Math.random().toString(36).substring(2, length + 2);
   }
@@ -162,6 +161,7 @@ export function restoreCurlyBraces(html) {
     .replace(/_%%CHOCOLA-RBRACE%%_/g, "}");
 }
 
+const ID_LETTERS = "abcdefghijklmnopqrstuvwxyz";
 const compiledCache = new Map();
 export function compileExpression(expr, useCtx) {
   const key = useCtx ? `ctx:${expr}` : `raw:${expr}`;
