@@ -1,5 +1,14 @@
 # Chocola Changelog
 
+## 2.0.0-next.1
+
+- Moved main Chocola imports [[#33](https://github.com/sad-gabi/chocola/issues/33)]:
+  - `{app}` to `chocola/compiler`
+  - `{dev}` to `chocola/dev`
+- Added JSDocs for `{dev}`.
+
+---
+
 ## 1.6.0 (Jul 23, 2026)
 
 ### Added features

@@ -5,7 +5,9 @@ description: How the Chocola compiler works internally
 
 ## Entry Point
 
-**`index.js`** — the public API. Exports `app.build(rootDir, srcDir)` which delegates to `compiler/index.js`.
+**`chocola/compiler`** — the public API. Import `{ app }` from `"chocola/compiler"` and call `app.build(rootDir, srcDir)`, which delegates to `compiler/index.js`.
+
+**`chocola/dev`** — the dev server API. Import `{ dev }` from `"chocola/dev"` and call `dev.server(rootDir)`.
 
 ## Compilation Pipeline
 
@@ -98,13 +100,12 @@ Wraps all runtime chunks in `DOMContentLoaded` and writes to `run-<random>.js`.
 ## Data Flow Diagram
 
 ```
-index.js
-  └─ compiler/index.js
-       ├─ config.js          → loadConfig + resolvePaths
-       ├─ pipeline.js        → getComponents, getSrcIndex, processStylesheet, processIcons, copyResources
-       ├─ dom-processor.js   → createDOM, validateAppContainer, getAppElements, serializeDOM, writeHTMLOutput, appendRuntimeScript
-       ├─ component-processor.js → validateChainStructure, processAllComponents, processComponentElement, scopeCss
-       └─ runtime-generator.js → generateRuntimeScript
+compiler/index.js
+  ├─ config.js          → loadConfig + resolvePaths
+  ├─ pipeline.js        → getComponents, getSrcIndex, processStylesheet, processIcons, copyResources
+  ├─ dom-processor.js   → createDOM, validateAppContainer, getAppElements, serializeDOM, writeHTMLOutput, appendRuntimeScript
+  ├─ component-processor.js → validateChainStructure, processAllComponents, processComponentElement, scopeCss
+  └─ runtime-generator.js → generateRuntimeScript
 ```
 
 ## Key Concepts

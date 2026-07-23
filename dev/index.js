@@ -153,3 +153,26 @@ export async function serve(__rootdir) {
     console.log(`Chocola App running at http://${__config.hostname}:${__config.port}/`);
   });
 }
+
+/**
+ * An intrinsic object that contains the Chocola Dev methods.
+ */
+export const dev = {
+  /**
+*  Initializes your Chocola dev server using a root directory.
+* 
+* ```js
+* import { app } from "chocola/compiler"
+import path from "path";
+import { fileURLToPath } from "url";
+ 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+ 
+app.build(__dirname);
+```
+* @example
+* @param {PathLike} __rootdir the directory where your Chocola App is
+*/
+  server(__rootdir) { serve(__rootdir) }
+};
