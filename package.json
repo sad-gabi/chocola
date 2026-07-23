@@ -32,8 +32,7 @@
   },
   "exports": {
     "./compiler": "./compiler/index.js",
-    "./dev": "./dev/index.js",
-    "./types": "./types/index.js"
+    "./dev": "./dev/index.js"
   },
   "dependencies": {
     "chalk": "^5.6.2",
