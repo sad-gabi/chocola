@@ -27,15 +27,17 @@ The core compiler and the minimum needed to build a real page with it.
 ## V2 — Consolidation
 **Status: In progress**
 
-Hardening what V1 introduced, giving components a proper file format and adding dynamic rendering.
+Hardening V1, giving components a proper file format and adding dynamic rendering.
+Introducing the `$` prefix.
 
 ### Breaking changes
-- Client-side static SPA generator
+- CSR SPA router
 - Declarative components imports
-- New HTML SFC (Single-File Components) system with tags: `<head>`, `<script>`, `<template>`, `<style>`
-- New `$runtime` replacing `RUNTIME` function.
+- New SFC (Single-File Components) system with tags: `<head>`, `<script>`, `<template>`, `<style>`
+- New `$runtime` function replacing `RUNTIME`.
 
-## New features
+### New features
+- ESM modules and dependencies imports
 - `for:each` and `switch/case` logic blocks
 - `<as:html></as:html>` blocks for raw HTML injection
 - `<const value="{foo}">` tag to define a local constant
@@ -48,9 +50,10 @@ Hardening what V1 introduced, giving components a proper file format and adding 
 
 The state layer: `ctx`, typed properties, and everything that depends on them staying live in the browser.
 
+- Reactivity engine
 - Live `${foo}` bindings
-- Reactive state and lifecycle hooks
-- `$bake` and `$cast` HTML attributes and JS functions to define components statefulness
+- Global state and lifecycle hooks
+- `$bake` and `$cast` attributes and functions to define components statefulness
 
 ## V4 — Shipping
 **Status: Planned**
