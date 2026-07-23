@@ -22,6 +22,28 @@ function scopeSelector(sel, cssId) {
 }
 
 function scopeCss(cssString, cssId) {
+  const keyframeRegex = /@(-webkit-)?keyframes\s+(\S+)/gi;
+  const animNames = new Set();
+  let match;
+  while ((match = keyframeRegex.exec(cssString))) {
+    animNames.add(match[2]);
+  }
+
+  if (animNames.size > 0) {
+    const sorted = [...animNames].sort((a, b) => b.length - a.length);
+    const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    for (const name of sorted) {
+      cssString = cssString.replace(
+        new RegExp(`(@(?:-webkit-)?keyframes\\s+)${esc(name)}`, "gi"),
+        `$1${name}-${cssId}`
+      );
+      cssString = cssString.replace(
+        new RegExp(`((?:animation|animation-name)\\s*:\\s*[^;{]*?)\\b${esc(name)}\\b`, "gi"),
+        `$1${name}-${cssId}`
+      );
+    }
+  }
+
   function findMatchingBrace(s, openIndex) {
     let depth = 0;
     for (let i = openIndex; i < s.length; i++) {
