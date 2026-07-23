@@ -40,7 +40,7 @@ Hardening what V1 introduced, giving components a proper file format and adding 
 - `<as:html></as:html>` blocks for raw HTML injection
 - `<const value="{foo}">` tag to define a local constant
 - `style:<style>="{foo}"` directive HTML attribute
-- `$debug(self, ...data)` method to add dev logs that will be removed in final build
+- `$debug(...data)` method to add dev logs that will be removed in final build
 - Typed properties
 
 ## V3 — Reactivity
