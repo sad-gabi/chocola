@@ -138,20 +138,13 @@ export default async function runtime(rootDir, buildConfig) {
   const doc = dom.window.document;
   const appContainer = validateAppContainer(doc);
 
-  const warnedDeprecated = new Set();
-  function hasDelIfAttr(el, sourceLoc) {
-    if (el.hasAttribute("del-if") && !el.hasAttribute("del:if") && !warnedDeprecated.has(sourceLoc)) {
-      warnedDeprecated.add(sourceLoc);
-      const name = sourceLoc ? sourceLoc.split(/[\\/]/).pop() : "unknown";
-      console.warn(chalk.yellow(`[deprecation] "del-if" is deprecated in ${chalk.cyan(name)} and will be removed in Chocola 2. Use "del:if" instead.`));
-    }
-    return el.hasAttribute("del-if") || el.hasAttribute("del:if");
+  function hasDelIfAttr(el) {
+    return el.hasAttribute("del:if");
   }
   function getDelIfAttr(el) {
-    return el.getAttribute("del:if") ?? el.getAttribute("del-if");
+    return el.getAttribute("del:if");
   }
   function removeDelIfAttr(el) {
-    el.removeAttribute("del-if");
     el.removeAttribute("del:if");
   }
 
@@ -162,7 +155,7 @@ export default async function runtime(rootDir, buildConfig) {
 
     for (const child of children) {
       const hasIf = child.hasAttribute("if");
-      const hasDelIf = hasDelIfAttr(child, pageSourcePath);
+      const hasDelIf = hasDelIfAttr(child);
       const hasElif = child.hasAttribute("elif");
       const hasElse = child.hasAttribute("else");
 
