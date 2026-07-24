@@ -1,6 +1,19 @@
 # Chocola Changelog
 
-## 2.0.0-next.1
+## 2.0.0-next.2 (Jul 23, 2029)
+
+- Perfomance optimizations, including:
+  - Double-processing of DOM elements [[#35](https://github.com/sad-gabi/chocola/issues/35)]
+  - Repeated new `Function(...)` compilation [[#36](https://github.com/sad-gabi/chocola/issues/36)]
+  - `extractContextFromElement` recreates `Function` per attribute [[#37](https://github.com/sad-gabi/chocola/issues/37)]
+  - `validateChainStructure` line-number search is O(n²) [[#40](https://github.com/sad-gabi/chocola/issues/40)]
+  - `genRandomId` re-declares `letters` const on every call [[#41](https://github.com/sad-gabi/chocola/issues/41)]
+  - `incrementAlfabet` uses `indexOf` per character [[#43](https://github.com/sad-gabi/chocola/issues/43)]
+  - `interpolateNode` recursive without depth guard [[#44](https://github.com/sad-gabi/chocola/issues/44)]
+  - Dev server uses two separate `fs.watch` calls [[#42](https://github.com/sad-gabi/chocola/issues/42)]
+  - `app.build` ignores the returned promise [[#45](https://github.com/sad-gabi/chocola/issues/45)]
+
+## 2.0.0-next.1 (Jul 23, 2026)
 
 - Moved main Chocola imports [[#33](https://github.com/sad-gabi/chocola/issues/33)]:
   - `{app}` to `chocola/compiler`
