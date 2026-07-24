@@ -113,7 +113,7 @@ async function processAssets(doc, rootDir, srcDir, outDirPath) {
  * }
  * >} config
  */
-export default async function runtime(rootDir, buildConfig) {
+export default async function compile(rootDir, buildConfig) {
   const isHotReload = buildConfig?.isHotReload || null;
   !isHotReload && logBanner();
 
@@ -261,5 +261,5 @@ export const app = {
  * @example
  * @param {PathLike} __rootdir the directory where your Chocola App is
  */
-  async build(__rootdir) { return runtime(__rootdir) }
+  async build(__rootdir) { return compile(__rootdir) }
 };
