@@ -29,7 +29,6 @@ export async function serve(__rootdir) {
   else { console.warn(chalk.bold.yellow("WARNING!"), `port not defined in chocola.config.json file: using default ${__config.port} port.`) }
 
   const srcDir = paths.src;
-  const componentsDir = paths.components;
 
   let compileTimeout;
   const scheduleRecompile = () => {
@@ -47,11 +46,6 @@ export async function serve(__rootdir) {
 
 
   fs.watch(srcDir, { recursive: true }, (eventType, filename) => {
-    if (filename && !filename.includes("node_modules")) {
-      scheduleRecompile();
-    }
-  });
-  fs.watch(componentsDir, { recursive: true }, (eventType, filename) => {
     if (filename && !filename.includes("node_modules")) {
       scheduleRecompile();
     }
