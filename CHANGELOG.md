@@ -1,5 +1,10 @@
 # Chocola Changelog
 
+## 2.0.0-next.3
+
+- Removed `del-if` support [#32]
+- Removed dynamic asset bundling support (`src`, `href`, `url()`) [#39]
+
 ## 2.0.0-next.2 (Jul 23, 2029)
 
 - Perfomance optimizations, including:

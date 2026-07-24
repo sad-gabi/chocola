@@ -75,11 +75,11 @@ Reactivity and state will be added in Chocola 3. As of now, manually update cont
 
 ### How do I show or hide something based on a condition?
 
-Two options. The `if` attribute hides the element visually (keeps it in the DOM with `display: none`). The `del-if` attribute removes it from the DOM entirely. Use `del-if` when the element shouldn't be there, and `if` when you might want to toggle it back quickly.
+Two options. The `if` attribute hides the element visually (keeps it in the DOM with `display: none`). The `del:if` attribute removes it from the DOM entirely. Use `del:if` when the element shouldn't be there, and `if` when you might want to toggle it back quickly.
 
 ```html
 <div if={isVisible}>Hidden but still in the DOM</div>
-<div del-if={shouldRemove}>Gone completely</div>
+<div del:if={shouldRemove}>Gone completely</div>
 ```
 
 ### Can I use JavaScript expressions directly in HTML?

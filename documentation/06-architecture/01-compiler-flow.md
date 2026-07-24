@@ -21,7 +21,7 @@ description: How the Chocola compiler works internally
 | `outDir` | `"dist"` | Output directory |
 | `libDir` | `"lib"` | Components directory (inside `srcDir`) |
 | `emptyOutDir` | `true` | Whether to clean output before build |
-| `assetImport` | `"legacy"` | Asset import mode (`"legacy"` or `"static"`) |
+
 
 `resolvePaths()` resolves absolute paths for `outDir`, `src`, and `components`.
 
@@ -54,18 +54,18 @@ For each element inside `<app>`:
 
 1. **Match** — checks if tag name corresponds to a loaded component
 2. **Context** — extracts attributes as context (`ctx.*`)
-3. **Chain validation** — validates `if`/`elif`/`else`/`del-if` structure on both slot content and component body separately before slot replacement, throwing with file location on violation
+3. **Chain validation** — validates `if`/`elif`/`else`/`del:if` structure on both slot content and component body separately before slot replacement, throwing with file location on violation
 4. **Template** — renders component body via JSDOM fragment
 5. **Slots** — replaces `<slot>` elements with the original inner HTML
 6. **Attribute interpolation** — evaluates `{expr}` in attributes using `with(ctx)`
-7. **Conditionals** — evaluates `if`, `del-if`, `elif`, `else` attributes
+7. **Conditionals** — evaluates `if`, `del:if`, `elif`, `else` attributes
    - `if={expr}` — hides element (`display: none`) when falsy
-   - `del-if={expr}` — removes element when falsy
+   - `del:if={expr}` — removes element when falsy
    - `elif={expr}` — alternative condition in a chain
    - `else` — fallback in a chain
    - Chained via `condChain` state tracked per-parent in a `Map`
    - `else` closes the chain; non-conditional elements reset it
-   - `elif`/`else` without a preceding `if`/`del-if` throws an error
+   - `elif`/`else` without a preceding `if`/`del:if` throws an error
 8. **Void elements** — `<void>` is a transparent conditional wrapper:
    - `<void if={expr}>` — renders children unwrapped when truthy
    - `<void elif={expr}>` — chain-aware alternative
@@ -88,7 +88,7 @@ Wraps all runtime chunks in `DOMContentLoaded` and writes to `run-<random>.js`.
 - **Stylesheets** — copies local CSS files to output with random filenames, updates `<link>` hrefs
 - **Icons** — copies icon files to output
 - **Scoped CSS** — writes component-scoped CSS to `sc-<random>.css`, appends `<link>` to document head
-- **Resources** — scans output HTML and CSS for local file references (`src`, `href`, `url()`), copies them to output preserving directory structure
+- **Static assets** — copies the `src/static/` directory to the output directory
 
 ### 8. Output (`compiler/dom-processor.js`)
 
@@ -102,7 +102,7 @@ Wraps all runtime chunks in `DOMContentLoaded` and writes to `run-<random>.js`.
 ```
 compiler/index.js
   ├─ config.js          → loadConfig + resolvePaths
-  ├─ pipeline.js        → getComponents, getSrcIndex, processStylesheet, processIcons, copyResources
+  ├─ pipeline.js        → getComponents, getSrcIndex, processStylesheet, processIcons, copyStaticDir
   ├─ dom-processor.js   → createDOM, validateAppContainer, getAppElements, serializeDOM, writeHTMLOutput, appendRuntimeScript
   ├─ component-processor.js → validateChainStructure, processAllComponents, processComponentElement, scopeCss
   └─ runtime-generator.js → generateRuntimeScript
@@ -114,5 +114,5 @@ compiler/index.js
 - **Asset inlining**: `.html`/`.css` imports in components are inlined at build time via `loadWithAssets`
 - **CSS Scoping**: Component styles are scoped by rewriting selectors under a unique CSS class ID. Both root and descendant matching via dual selectors (AND + descendant).
 - **Runtime scripts**: Components with dynamic behavior get a unique ID and a runtime call that re-attaches event listeners/effects on page load
-- **Conditional chains**: `if`/`del-if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with file location (line included when the error is within the same source file)
+- **Conditional chains**: `if`/`del:if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with file location (line included when the error is within the same source file)
 - **Void elements**: `<void>` acts as a transparent wrapper that never renders itself; useful for conditional rendering without extra DOM nodes

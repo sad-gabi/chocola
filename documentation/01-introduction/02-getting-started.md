@@ -34,8 +34,7 @@ npm install chocola
     "srcDir": "/src",
     "outDir": "/dist",
     "libDir": "/lib",
-    "emptyOutDir": true,
-    "assetImport": "static"
+    "emptyOutDir": true
   },
   "dev": {
     "hostname": "localhost",
@@ -43,8 +42,6 @@ npm install chocola
   }
 }
 ```
-
-> DEPRECATION WARNING: `assetImport` also accepts the `"legacy"` value, an assets system that imports assets based on `src` and `href` HTML attributes and `url()` CSS functions. You may find this system inefficient and buggy in some cases. It will be removed in V2.
 
 ## 4. Create `index.js`
 
