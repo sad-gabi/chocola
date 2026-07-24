@@ -102,14 +102,13 @@ export function genRandomId(collection = null, length = 10, lettersOnly = false)
  * incrementAlfabet("z") // "aa"
  */
 export function incrementAlfabet(letters) {
-  const alfabet = "abcdefghijklmnopqrstuvwxyz";
   let arr = letters.split("");
   let i = arr.length - 1;
 
   while (i >= 0) {
-    let pos = alfabet.indexOf(arr[i]);
+    let pos = arr[i].charCodeAt(0) - 97;
     if (pos < 25) {
-      arr[i] = alfabet[pos + 1];
+      arr[i] = String.fromCharCode(pos + 97 + 1);
       return arr.join("");
     } else {
       arr[i] = "a";
