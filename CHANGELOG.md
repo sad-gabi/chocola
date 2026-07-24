@@ -5,7 +5,7 @@
 - Removed `del-if` support [#32]
 - Removed dynamic asset bundling support (`src`, `href`, `url()`) [#39]
 
-## 2.0.0-next.2 (Jul 23, 2029)
+## 2.0.0-next.2 (Jul 23, 2026)
 
 - Perfomance optimizations, including:
   - Double-processing of DOM elements [[#35](https://github.com/sad-gabi/chocola/issues/35)]
