@@ -118,17 +118,23 @@ function removeDelIfAttr(el) {
   el.removeAttribute("del:if");
 }
 
-function interpolateNode(node, ctxProxy) {
-  if (node.nodeType === 3) {
-    node.textContent = node.textContent.replace(/\{([^}]+)\}/g, (_, expr) => {
-      try {
-        return Function("ctx", `with(ctx) { return (${expr}); }`)(ctxProxy);
-      } catch {
-        return "";
+function interpolateNode(root, ctxProxy) {
+  const stack = [root];
+  while (stack.length) {
+    const node = stack.pop();
+    if (node.nodeType === 3) {
+      node.textContent = node.textContent.replace(/\{([^}]+)\}/g, (_, expr) => {
+        try {
+          return compileExpression(expr, true)(ctxProxy);
+        } catch {
+          return "";
+        }
+      });
+    } else {
+      for (let i = node.childNodes.length - 1; i >= 0; i--) {
+        stack.push(node.childNodes[i]);
       }
-    });
-  } else {
-    node.childNodes.forEach(child => interpolateNode(child, ctxProxy));
+    }
   }
 }
 
