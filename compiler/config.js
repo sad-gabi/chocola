@@ -1,5 +1,4 @@
 import path from "path";
-import chalk from "chalk";
 import { getChocolaConfig } from "../utils.js";
 
 /**
@@ -20,44 +19,8 @@ export async function loadConfig(rootDir) {
   const outDir = bundleConfig.outDir || "dist";
   const libDir = bundleConfig.libDir || "lib";
   const emptyOutDir = bundleConfig.emptyOutDir !== false;
-  const assetImport = bundleConfig.assetImport || "legacy";
 
-  logConfigWarnings(bundleConfig, emptyOutDir, assetImport);
-
-  return { srcDir, outDir, libDir, emptyOutDir, assetImport };
-}
-
-function logConfigWarnings(bundleConfig, emptyOutDir, assetImport) {
-  if (!bundleConfig.srcDir) {
-    console.warn(
-      chalk.bold.yellow("WARNING!"),
-      'srcDir not defined in chocola.config.json file: using default "src" directory.'
-    );
-  }
-
-  if (!bundleConfig.outDir) {
-    console.warn(
-      chalk.bold.yellow("WARNING!"),
-      'outDir not defined in chocola.config.json file: using default "dist" directory.'
-    );
-  }
-
-  if (!bundleConfig.libDir) {
-    console.warn(
-      chalk.bold.yellow("WARNING!"),
-      'libDir not defined in chocola.config.json file: using default "lib" directory.'
-    );
-  }
-
-  console.log(`> using emptyOutDir = ${emptyOutDir}`);
-
-  if (assetImport !== "static") {
-    console.warn(
-      chalk.bold.yellow("DEPRECATION WARNING!"),
-      'The legacy asset import system ("bundle.assetImport") will be removed in Chocola 2. ' +
-      'Set "bundle.assetImport": "static" in chocola.config.json and migrate your assets to src/static/.'
-    );
-  }
+  return { srcDir, outDir, libDir, emptyOutDir };
 }
 
 /**

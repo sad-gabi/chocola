@@ -16,7 +16,6 @@ import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
 import { genRandomId, throwError, compileExpression } from "./utils.js";
 import {
-  copyResources,
   copyStaticDir,
   getComponents,
   getSrcIndex,
@@ -220,7 +219,7 @@ export default async function runtime(rootDir, buildConfig) {
   const appElements = getAppElements(appContainer);
   const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents, pageSourcePath, srcIndexContent);
   const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
-  const globalCss = (await processAssets(doc, rootDir, config.srcDir, paths.outDir)).join("\n");
+  await processAssets(doc, rootDir, config.srcDir, paths.outDir);
 
   if (scopesCss) {
     const fileName = "sc-" + genRandomId(null, 6) + ".css";
@@ -233,11 +232,7 @@ export default async function runtime(rootDir, buildConfig) {
   await writeHTMLOutput(html, paths.outDir);
 
   try {
-    if (config.assetImport === "static") {
-      await copyStaticDir(paths.src, paths.outDir);
-    } else {
-      await copyResources(rootDir, scopesCss, globalCss, config.srcDir, paths.outDir);
-    }
+    await copyStaticDir(paths.src, paths.outDir);
   } catch (err) {
     throwError(err.message || err);
   }
