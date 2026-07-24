@@ -5,7 +5,7 @@ description: How the Chocola compiler works internally
 
 ## Entry Point
 
-**`chocola/compiler`** — the public API. Import `{ app }` from `"chocola/compiler"` and call `app.build(rootDir, srcDir)`, which delegates to `compiler/index.js`.
+**`chocola/compiler`** — the public API. Import `{ app }` from `"chocola/compiler"` and call `app.build(rootDir)`, which delegates to `compiler/index.js`.
 
 **`chocola/dev`** — the dev server API. Import `{ dev }` from `"chocola/dev"` and call `dev.server(rootDir)`.
 
@@ -54,7 +54,7 @@ For each element inside `<app>`:
 
 1. **Match** — checks if tag name corresponds to a loaded component
 2. **Context** — extracts attributes as context (`ctx.*`)
-3. **Chain validation** — validates `if`/`elif`/`else`/`del-if` structure on both slot content and component body separately before slot replacement, throwing with `file:line` on violation
+3. **Chain validation** — validates `if`/`elif`/`else`/`del-if` structure on both slot content and component body separately before slot replacement, throwing with file location on violation
 4. **Template** — renders component body via JSDOM fragment
 5. **Slots** — replaces `<slot>` elements with the original inner HTML
 6. **Attribute interpolation** — evaluates `{expr}` in attributes using `with(ctx)`
@@ -114,5 +114,5 @@ compiler/index.js
 - **Asset inlining**: `.html`/`.css` imports in components are inlined at build time via `loadWithAssets`
 - **CSS Scoping**: Component styles are scoped by rewriting selectors under a unique CSS class ID. Both root and descendant matching via dual selectors (AND + descendant).
 - **Runtime scripts**: Components with dynamic behavior get a unique ID and a runtime call that re-attaches event listeners/effects on page load
-- **Conditional chains**: `if`/`del-if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with `file:line` error reporting
+- **Conditional chains**: `if`/`del-if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with file location (line included when the error is within the same source file)
 - **Void elements**: `<void>` acts as a transparent wrapper that never renders itself; useful for conditional rendering without extra DOM nodes
