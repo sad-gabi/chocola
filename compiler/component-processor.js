@@ -194,8 +194,8 @@ export function processComponentElement(
   sourceContent
 ) {
   const tagName = element.tagName.toLowerCase();
-  const compName = tagName + ".js";
-  const instance = loadedComponents.get(compName);
+  const compName = tagName + ".html";
+  let instance = loadedComponents.get(compName);
 
   if (!instance || instance === undefined) return false;
   if (renderChain && renderChain.includes(compName)) return false;
@@ -207,233 +207,236 @@ export function processComponentElement(
     ctx = extractContextFromElement(element);
     staticCtxRegistry && staticCtxRegistry.set(element, ctx);
   }
-  const srcInnerHtml = element.innerHTML;
+  const elInnerHtml = element.innerHTML;
 
   const ctxProxy = new Proxy(ctx, {
     has() { return true; },
     get(target, key) { return target[key]; }
   });
 
-  if (instance.body) {
-    let body = protectCurlyBraces(instance.body);
+  instance = protectCurlyBraces(instance);
+  const dom = new JSDOM(instance);
+  const doc = dom.window.document;
+  let script = doc.querySelector("script")?.innerHTML;
+  let template = doc.querySelector("template")?.innerHTML;
+  let styles = doc.querySelector("style")?.innerHTML;
 
-    const fragment = JSDOM.fragment(body);
+  if (!template) {
+    console.warn(chalk.yellow(`${compName} — component is missing a <template>`));
+    return false;
+  }
+  
+  const fragment = JSDOM.fragment(template);
 
-    const slotFragment = JSDOM.fragment(srcInnerHtml);
-    if (sourceFile) {
-      validateChainStructure(slotFragment, sourceFile, sourceContent, srcInnerHtml);
+  const slotFragment = JSDOM.fragment(elInnerHtml);
+  if (sourceFile) {
+    validateChainStructure(slotFragment, sourceFile, sourceContent, elInnerHtml);
+  }
+  validateChainStructure(fragment, instance.__sourceFile || compName, template, template);
+  Array.from(fragment.querySelectorAll("slot")).forEach(slot => {
+    slot.replaceWith(slotFragment);
+  });
+
+  const childEntries = Array.from(fragment.querySelectorAll("*")).map(el => ({
+    el,
+    parent: el.parentNode
+  }));
+  const condChains = new Map();
+
+  childEntries.forEach(({ el: child, parent }) => {
+    if (!condChains.has(parent)) {
+      condChains.set(parent, { active: false, rendered: false });
     }
-    validateChainStructure(fragment, instance.__sourceFile || compName, body, body);
-    Array.from(fragment.querySelectorAll("slot")).forEach(slot => {
-      slot.replaceWith(slotFragment);
-    });
+    const condChain = condChains.get(parent);
 
-    const childEntries = Array.from(fragment.querySelectorAll("*")).map(el => ({
-      el,
-      parent: el.parentNode
-    }));
-    const condChains = new Map();
+    const hasIf = child.hasAttribute("if");
+    const hasDelIf = hasDelIfAttr(child);
+    const hasElif = child.hasAttribute("elif");
+    const hasElse = child.hasAttribute("else");
 
-    childEntries.forEach(({ el: child, parent }) => {
-      if (!condChains.has(parent)) {
-        condChains.set(parent, { active: false, rendered: false });
+    if (hasElif || hasElse) {
+      if (!condChain.active) {
+        throwError(`${instance.__sourceFile || compName}: <${child.tagName.toLowerCase()}> has ${hasElif ? "elif" : "else"} without a preceding if/del-if sibling`);
       }
-      const condChain = condChains.get(parent);
-
-      const hasIf = child.hasAttribute("if");
-      const hasDelIf = hasDelIfAttr(child);
-      const hasElif = child.hasAttribute("elif");
-      const hasElse = child.hasAttribute("else");
-
-      if (hasElif || hasElse) {
-        if (!condChain.active) {
-          throwError(`${instance.__sourceFile || compName}: <${child.tagName.toLowerCase()}> has ${hasElif ? "elif" : "else"} without a preceding if/del-if sibling`);
-        }
-        if (condChain.rendered) {
-          child.remove();
-          if (hasElse) {
-            condChain.active = false;
-          }
-          return;
-        }
-      }
-
-      if (child.tagName.toLowerCase() === "void") {
-        if (hasElif || hasElse) {
-          if (hasElif) {
-            const expr = child.getAttribute("elif").slice(1, -1);
-            const fn = compileExpression(expr, true);
-            if (!fn(ctxProxy)) {
-              child.remove();
-              return;
-            }
-          }
-          child.replaceWith(...child.children);
-          condChain.rendered = true;
-          if (hasElse) {
-            condChain.active = false;
-          }
-        } else if (hasIf || hasDelIf) {
-          const raw = hasIf ? child.getAttribute("if") : getDelIfAttr(child);
-          const expr = raw.slice(1, -1);
-          const fn = compileExpression(expr, true);
-          condChain.active = true;
-          if (fn(ctxProxy)) {
-            child.replaceWith(...child.children);
-            condChain.rendered = true;
-          } else {
-            child.remove();
-            condChain.rendered = false;
-          }
-        } else {
-          child.replaceWith(...child.children);
+      if (condChain.rendered) {
+        child.remove();
+        if (hasElse) {
           condChain.active = false;
-          condChain.rendered = false;
         }
         return;
       }
+    }
 
-      const reservedAttrs = ["if", "del:if", "elif", "else"];
-
-      Array.from(child.attributes).forEach(attribute => {
-        if (!attribute || attribute === undefined) return;
-        if (reservedAttrs.includes(attribute.name)) return;
-        attribute.value = attribute.value.replace(
-          /\{([^}]+)\}/g,
-          (_, expr) => {
-            try {
-              return compileExpression(expr, true)(ctxProxy);
-            } catch {
-              return "";
-            }
+    if (child.tagName.toLowerCase() === "void") {
+      if (hasElif || hasElse) {
+        if (hasElif) {
+          const expr = child.getAttribute("elif").slice(1, -1);
+          const fn = compileExpression(expr, true);
+          if (!fn(ctxProxy)) {
+            child.remove();
+            return;
           }
-        );
-      });
-
-      processComponentElement(
-        child,
-        loadedComponents,
-        runtimeChunks,
-        compIdColl,
-        letterState,
-        runtimeMap,
-        cssScopes,
-        cssScopesMap,
-        scopedStyles,
-        renderChain.concat(compName),
-        staticCtxRegistry,
-        instance.__sourceFile || compName,
-        body
-      );
-
-      if (hasIf) {
-        const expr = child.getAttribute("if").slice(1, -1);
-        const fn = compileExpression(expr, true);
-        condChain.active = true;
-        if (fn(ctxProxy)) {
-          condChain.rendered = true;
-        } else {
-          child.style.display = "none";
-          condChain.rendered = false;
         }
-        child.removeAttribute("if");
-      } else if (hasDelIf) {
-        const expr = getDelIfAttr(child).slice(1, -1);
-        const fn = compileExpression(expr, true);
-        condChain.active = true;
-        if (fn(ctxProxy)) {
-          condChain.rendered = true;
-        } else {
-          child.remove();
-          condChain.rendered = false;
-        }
-        removeDelIfAttr(child);
-      } else if (hasElif) {
-        const expr = child.getAttribute("elif").slice(1, -1);
-        const fn = compileExpression(expr, true);
-        if (fn(ctxProxy)) {
-          condChain.rendered = true;
-        } else {
-          child.remove();
-        }
-        child.removeAttribute("elif");
-      } else if (hasElse) {
+        child.replaceWith(...child.children);
         condChain.rendered = true;
-        condChain.active = false;
-        child.removeAttribute("else");
+        if (hasElse) {
+          condChain.active = false;
+        }
+      } else if (hasIf || hasDelIf) {
+        const raw = hasIf ? child.getAttribute("if") : getDelIfAttr(child);
+        const expr = raw.slice(1, -1);
+        const fn = compileExpression(expr, true);
+        condChain.active = true;
+        if (fn(ctxProxy)) {
+          child.replaceWith(...child.children);
+          condChain.rendered = true;
+        } else {
+          child.remove();
+          condChain.rendered = false;
+        }
       } else {
+        child.replaceWith(...child.children);
         condChain.active = false;
         condChain.rendered = false;
       }
+      return;
+    }
 
-      interpolateNode(child, ctxProxy)
-    });
+    const reservedAttrs = ["if", "del:if", "elif", "else"];
 
-    const firstChild = fragment.firstChild;
-
-    if (firstChild && firstChild.nodeType === 1) {
-      if (instance.script || instance.effects) {
-        const compId = "chid-" + genRandomId(compIdColl);
-        firstChild.setAttribute("chid", compId);
-
-        let script = instance.script && instance.script.toString();
-
-        const ctxRegex = /ctx\s*=\s*({.*?})/;
-        const ctxMatch = script.match(ctxRegex);
-        let runtimeCtx = {};
-        if (ctxMatch) {
+    Array.from(child.attributes).forEach(attribute => {
+      if (!attribute || attribute === undefined) return;
+      if (reservedAttrs.includes(attribute.name)) return;
+      attribute.value = attribute.value.replace(
+        /\{([^}]+)\}/g,
+        (_, expr) => {
           try {
-            runtimeCtx = JSON.parse(ctxMatch[1].replace(/(\w+):/g, '"$1":'));
-          } catch (e) {
-            runtimeCtx = {};
+            return compileExpression(expr, true)(ctxProxy);
+          } catch {
+            return "";
           }
         }
-        let ctxDef = "";
-        for (const [key, value] of Object.entries(runtimeCtx)) {
-          ctxDef += `ctx.${key} = ctx.${key}||${JSON.stringify(value)};\n`;
+      );
+    });
+
+    processComponentElement(
+      child,
+      loadedComponents,
+      runtimeChunks,
+      compIdColl,
+      letterState,
+      runtimeMap,
+      cssScopes,
+      cssScopesMap,
+      scopedStyles,
+      renderChain.concat(compName),
+      staticCtxRegistry,
+      compName,
+      template
+    );
+
+    if (hasIf) {
+      const expr = child.getAttribute("if").slice(1, -1);
+      const fn = compileExpression(expr, true);
+      condChain.active = true;
+      if (fn(ctxProxy)) {
+        condChain.rendered = true;
+      } else {
+        child.style.display = "none";
+        condChain.rendered = false;
+      }
+      child.removeAttribute("if");
+    } else if (hasDelIf) {
+      const expr = getDelIfAttr(child).slice(1, -1);
+      const fn = compileExpression(expr, true);
+      condChain.active = true;
+      if (fn(ctxProxy)) {
+        condChain.rendered = true;
+      } else {
+        child.remove();
+        condChain.rendered = false;
+      }
+      removeDelIfAttr(child);
+    } else if (hasElif) {
+      const expr = child.getAttribute("elif").slice(1, -1);
+      const fn = compileExpression(expr, true);
+      if (fn(ctxProxy)) {
+        condChain.rendered = true;
+      } else {
+        child.remove();
+      }
+      child.removeAttribute("elif");
+    } else if (hasElse) {
+      condChain.rendered = true;
+      condChain.active = false;
+      child.removeAttribute("else");
+    } else {
+      condChain.active = false;
+      condChain.rendered = false;
+    }
+
+    interpolateNode(child, ctxProxy)
+  });
+
+  const firstChild = fragment.children[0];
+
+  if (firstChild && firstChild.nodeType === 1) {
+    if (script) {
+      const compId = "chid-" + genRandomId(compIdColl);
+      firstChild.setAttribute("chid", compId);
+
+      const ctxRegex = /ctx\s*=\s*({.*?})/;
+      const ctxMatch = script.match(ctxRegex);
+      let runtimeCtx = {};
+      if (ctxMatch) {
+        try {
+          runtimeCtx = JSON.parse(ctxMatch[1].replace(/(\w+):/g, '"$1":'));
+        } catch (e) {
+          runtimeCtx = {};
         }
-        script = script.replace(ctxRegex, "ctx");
-        script = script.replace(/RUNTIME\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
-
-        let letterEntry = runtimeMap && runtimeMap.get(compName);
-        let letter;
-        if (!letterEntry) {
-          letter = getNextLetter(letterState);
-          script = script.replace(/RUNTIME/g, `${letter}RUNTIME`);
-          runtimeChunks.push(script);
-          runtimeMap && runtimeMap.set(compName, { letter });
-        } else {
-          letter = letterEntry.letter;
-        }
-
-        runtimeChunks.push(`${letter}RUNTIME(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
       }
-    }
-
-    let style = instance.styles && instance.styles.toString();
-    if (style) {
-      let cssId = cssScopesMap && cssScopesMap.get(compName);
-      if (!cssId) {
-        cssId = genRandomId(cssScopes, 8, true);
-        cssScopesMap.set(compName, cssId);
+      let ctxDef = "";
+      for (const [key, value] of Object.entries(runtimeCtx)) {
+        ctxDef += `ctx.${key} = ctx.${key}||${JSON.stringify(value)};\n`;
       }
-      if (fragment.firstChild && fragment.firstChild.nodeType === 1) {
-        fragment.firstChild.classList.add(cssId);
+      
+      script = script.replace(ctxRegex, "ctx");
+      script = script.replace(/RUNTIME\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
+
+      let letterEntry = runtimeMap && runtimeMap.get(compName);
+      let letter;
+      if (!letterEntry) {
+        letter = getNextLetter(letterState);
+        script = script.replace(/RUNTIME/g, `${letter}RUNTIME`);
+        runtimeChunks.push(script);
+        runtimeMap && runtimeMap.set(compName, { letter });
+      } else {
+        letter = letterEntry.letter;
       }
-      style = scopeCss(style, cssId);
-      scopedStyles.push(style);
-    }
 
-    if (fragment.firstChild && fragment.firstChild.nodeType === 1) {
-      fragment.firstChild.setAttribute("data-ch-source", instance.__sourceFile || compName);
+      runtimeChunks.push(`${letter}RUNTIME(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
     }
-
-    element.replaceWith(fragment);
-    return true;
   }
 
-  console.warn(chalk.yellow(`${compName} — component could not be loaded (missing body or styles export)`));
-  return false;
+  if (styles) {
+    let cssId = cssScopesMap && cssScopesMap.get(compName);
+    if (!cssId) {
+      cssId = genRandomId(cssScopes, 8, true);
+      cssScopesMap.set(compName, cssId);
+    }
+    if (fragment.children.length === 1 && firstChild.nodeType === 1) {
+      firstChild.classList.add(cssId);
+    }
+    styles = scopeCss(styles, cssId);
+    scopedStyles.push(styles);
+  }
+
+  if (fragment.children.length === 1 && firstChild.nodeType === 1) {
+    firstChild.setAttribute("data-ch-source", compName);
+  }
+
+  element.replaceWith(fragment);
+  return true;
 }
 
 /**

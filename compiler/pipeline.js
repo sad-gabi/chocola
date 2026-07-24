@@ -1,5 +1,5 @@
 import { promises as fs } from "fs";
-import { loadWithAssets, throwError, genRandomId } from "./utils.js";
+import { throwError, genRandomId } from "./utils.js";
 import { readMyFile, checkFile } from "./fs.js";
 import path from "path";
 
@@ -19,7 +19,7 @@ export async function getComponents(libDir) {
   try {
     let componentsLib = [];
     let loadedComponents = new Map();
-    let notDefComps = [];
+    let emptyComps = [];
 
     const components = await fs.readdir(libDir);
 
@@ -28,22 +28,15 @@ export async function getComponents(libDir) {
     }
 
     for (const comp of components) {
-      if (!comp.endsWith(".js") || comp[0] !== comp[0].toUpperCase()) continue;
+      if (!comp.endsWith(".html")) continue;
 
       componentsLib.push(comp);
 
-      let module;
       try {
-        module = await loadWithAssets(path.join(libDir, comp));
-
-        if (typeof module.default !== "function") {
-          notDefComps.push(comp);
-          continue;
-        }
-
-        const instance = module.default();
         const compPath = path.join(libDir, comp);
-        instance.__sourceFile = compPath;
+        const instance = await fs.readFile(compPath, "utf-8");
+
+        if (instance === "" || instance.trim().length === 0) emptyComps.push(comp);
 
         loadedComponents.set(comp.toLowerCase(), instance);
       } catch (err) {
@@ -51,7 +44,7 @@ export async function getComponents(libDir) {
       }
     }
 
-    return { componentsLib, loadedComponents, notDefComps };
+    return { componentsLib, loadedComponents, emptyComps };
   } catch (err) {
     throwError(`Failed to load components from ${libDir}: ${err.message}`);
   }

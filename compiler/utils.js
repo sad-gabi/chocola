@@ -14,64 +14,6 @@ export function throwError(err) {
 }
 
 /**
- * Loads a JavaScript module and inlines asset imports (HTML/CSS files)
- * This allows components to import external template files as strings
- * @param {import("fs").PathLike} filePath - Path to the JavaScript file
- * @returns {Promise<object>} - The imported module
- * @example
- * // Component with asset import
- * import template from "./button.html";
- * export default function Button() { return { body: template }; }
- */
-export async function loadWithAssets(filePath) {
-  let code;
-  try {
-    code = await fs.readFile(filePath, "utf8");
-  } catch (err) {
-    throwError(`Failed to read component file "${filePath}": ${err.message || err}`);
-  }
-
-  const importRegex = /import\s+(\w+)\s+from\s+["'](.+?\.(html|css))["'];?/g;
-
-  const replacements = [];
-  let match;
-  while ((match = importRegex.exec(code))) {
-    const varName = match[1];
-    const relPath = match[2];
-    const absPath = path.resolve(path.dirname(filePath), relPath);
-
-    let content;
-    try {
-      content = await fs.readFile(absPath, "utf8");
-    } catch (err) {
-      throwError(
-        `Failed to read imported file "${relPath}" (resolved to "${absPath}") ` +
-        `for variable "${varName}" in component "${filePath}": ${err.message || err}`
-      );
-    }
-
-    replacements.push({ from: match[0], to: `const ${varName} = ${JSON.stringify(content)};` });
-  }
-
-  for (const { from, to } of replacements) {
-    code = code.replace(from, to);
-  }
-
-  const dataUrl =
-    "data:text/javascript;base64," +
-    Buffer.from(code).toString("base64");
-
-  try {
-    const mod = await import(dataUrl);
-    return mod;
-  } catch (err) {
-    throwError(
-      `Failed to evaluate component "${filePath}": ${err.message || err}`
-    );
-  }
-}
-
-/**
  * Generates a random ID string
  * @param {Array} collection - Array to track used IDs (prevents duplicates)
  * @param {number} length - Desired length of the ID (default: 10)

@@ -75,15 +75,15 @@ async function setupOutputDirectory(outDirPath, emptyOutDir) {
 
 async function loadAndDisplayComponents(srcComponentsPath) {
   const foundComponents = await getComponents(srcComponentsPath);
-  const { loadedComponents, notDefComps, componentsLib } = foundComponents;
+  const { loadedComponents, notDefComps: emptyComps, componentsLib } = foundComponents;
 
   console.log(`       LOADING COMPONENTS`);
   console.log(chalk.bold.green(">"), "Components found in", chalk.green.underline(srcComponentsPath) + ":");
   console.log("   ", componentsLib, "\n");
 
-  if (notDefComps.length > 0) {
-    console.warn(chalk.bold.yellow("WARNING!"), "The following components don't include a default export:");
-    console.log("   ", notDefComps);
+  if (emptyComps?.length > 0) {
+    console.warn(chalk.bold.yellow("WARNING!"), "The following component files are empty:");
+    console.log("   ", emptyComps);
   }
 
   return loadedComponents;
