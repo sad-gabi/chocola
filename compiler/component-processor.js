@@ -399,22 +399,23 @@ export function processComponentElement(
       for (const [key, value] of Object.entries(runtimeCtx)) {
         ctxDef += `ctx.${key} = ctx.${key}||${JSON.stringify(value)};\n`;
       }
-      
+
       script = script.replace(ctxRegex, "ctx");
-      script = script.replace(/RUNTIME\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
+      script = script.replace(/\$runtime\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
 
       let letterEntry = runtimeMap && runtimeMap.get(compName);
       let letter;
       if (!letterEntry) {
         letter = getNextLetter(letterState);
-        script = script.replace(/RUNTIME/g, `${letter}RUNTIME`);
+        script = script.replace(RUNTIME_KW, `${letter}r`);
+        console.log(script)
         runtimeChunks.push(script);
         runtimeMap && runtimeMap.set(compName, { letter });
       } else {
         letter = letterEntry.letter;
       }
 
-      runtimeChunks.push(`${letter}RUNTIME(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
+      runtimeChunks.push(`${letter}r(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
     }
   }
 
@@ -483,3 +484,6 @@ function getNextLetter(letterState) {
   }
   return letterState.value;
 }
+
+const RUNTIME_KW = "$runtime";
+const RUNTIME_REGEX = new RegExp(RUNTIME_KW, "g");
