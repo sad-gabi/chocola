@@ -273,5 +273,5 @@ export const app = {
  * @example
  * @param {PathLike} __rootdir the directory where your Chocola App is
  */
-  build(__rootdir) { runtime(__rootdir) }
+  async build(__rootdir) { return runtime(__rootdir) }
 };

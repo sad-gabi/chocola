@@ -168,5 +168,5 @@ app.build(__dirname);
 * @example
 * @param {PathLike} __rootdir the directory where your Chocola App is
 */
-  server(__rootdir) { serve(__rootdir) }
+  async server(__rootdir) { return serve(__rootdir) }
 };
