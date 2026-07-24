@@ -58,14 +58,13 @@ export async function getComponents(libDir) {
 }
 
 /**
- * Loads the project index file (HTML or .choco)
- * If both HTML and .choco files exist, throws an error
+ * Loads the project index file
  * @param {import("fs").PathLike} srcPath - Source directory
  * @returns {Promise<{
  *   srcHtmlFile: string | null,
  *   srcChocoFile: string | null
  * }>}
- * @throws {Error} if both index files exist or .choco is used (not yet supported)
+ * @throws {Error}
  */
 export async function getSrcIndex(srcPath) {
   const srcHtmlPath = path.join(srcPath, "index.html");
