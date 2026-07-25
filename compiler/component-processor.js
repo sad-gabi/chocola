@@ -142,6 +142,21 @@ function interpolateNode(root, ctxProxy) {
   }
 }
 
+function getLineNumber(sourceContent, parentContent, idxInParent) {
+  if (sourceContent === parentContent) {
+    return parentContent.substring(0, idxInParent).split("\n").length;
+  }
+  const templateStartMatch = sourceContent.match(/<template[^>]*>/);
+  if (templateStartMatch) {
+    const contentStart = templateStartMatch.index + templateStartMatch[0].length;
+    const beforeContent = sourceContent.substring(0, contentStart);
+    const linesInBefore = beforeContent.split("\n").length;
+    const linesInTemplate = parentContent.substring(0, idxInParent).split("\n").length;
+    return linesInBefore + linesInTemplate - 1;
+  }
+  return null;
+}
+
 function validateChainStructure(parent, sourceFile, sourceContent, parentContent) {
   const children = [...parent.children];
   let chainActive = false;
@@ -157,10 +172,11 @@ function validateChainStructure(parent, sourceFile, sourceContent, parentContent
         const tag = child.tagName.toLowerCase();
         const attr = hasElif ? "elif" : "else";
         let loc = sourceFile;
-        if (sourceContent && sourceContent === parentContent) {
+        if (sourceContent && parentContent) {
           const idx = parentContent.indexOf(child.outerHTML);
           if (idx !== -1) {
-            loc = `${sourceFile}:${parentContent.substring(0, idx).split("\n").length}`;
+            const lineNum = getLineNumber(sourceContent, parentContent, idx);
+            if (lineNum !== null) loc = `${sourceFile}:${lineNum}`;
           }
         }
         throwError(`${loc}\n    <${tag}> has ${attr} without a preceding if/del-if sibling`);
@@ -260,7 +276,7 @@ export function processComponentElement(
   if (sourceFile) {
     validateChainStructure(slotFragment, sourceFile, sourceContent, elInnerHtml);
   }
-  validateChainStructure(fragment, instance.__sourceFile || compName, template, template);
+  validateChainStructure(fragment, instance.__sourceFile || compName, instance, template);
   Array.from(fragment.querySelectorAll("slot")).forEach(slot => {
     slot.replaceWith(slotFragment);
   });
