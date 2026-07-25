@@ -50,8 +50,8 @@ description: How the Chocola compiler works internally
 For each element inside `<app>`:
 
 1. **Match** — checks if tag name corresponds to a loaded component
-2. **Context** — extracts attributes as context (`ctx.*`)
-3. **Chain validation** — validates `if`/`elif`/`else`/`del:if` structure on both slot content and component body separately before slot replacement, throwing with file location on violation
+2. **Context** — extracts attributes as context
+3. **Chain validation** — validates `if`/`elif`/`else`/`del:if` structure on both slot content and component body separately, throwing with file location on violation
 4. **Template** — renders component body via JSDOM fragment
 5. **Slots** — replaces `<slot>` elements with the original inner HTML
 6. **Attribute interpolation** — evaluates `{expr}` in attributes using `with(ctx)`

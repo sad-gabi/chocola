@@ -10,8 +10,6 @@ my-app/
 ├── src/
 │   ├── lib/
 │   ├── static/
-│   ├── styles/
-│   ├── routes/
 │   └── index.html
 ├── chocola.config.json
 ├── chocola.server.js

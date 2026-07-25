@@ -1,6 +1,6 @@
 ---
 title: Runtime
-description: Component runtime logic, self, and ctx
+description: Component runtime logic
 ---
 
 ## Script Runtime
@@ -24,7 +24,7 @@ The runtime function receives access to component data and DOM elements through 
 
 > You don't declare `self` and `ctx` as parameters — they are injected automatically at compile-time.
 
-### Example with `self` and `ctx`
+### Example with `self`
 
 ```html
 <script>

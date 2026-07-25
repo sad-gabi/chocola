@@ -17,8 +17,8 @@ Chocola is a web framework designed for simplicity and modularity. It lets you b
         const number = self.querySelector(".number");
 
         btn.addEventListener("click", () => {
-            ctx.count++;
-            number.textContent = ctx.count;
+            count++;
+            number.textContent = count;
         })
     }
 </script>

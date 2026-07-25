@@ -106,7 +106,7 @@ function $runtime() {
 }
 ```
 
-`$runtime` runs once after the component is rendered. It receives `self` (the root element) and `ctx` (props and state) as injected parameters — you don't need to declare them in the signature.
+`$runtime` runs once after the component is rendered. It receives `self` (the root element) and `ctx` (props and state) as injected parameters — you don't declare them in the signature.
 
 ```html
 <script>
