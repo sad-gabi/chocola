@@ -1,6 +1,18 @@
 # Chocola Changelog
 
-## 2.0.0-next.3
+## 2.0.0-next.4 (Jul 25, 2026)
+
+- Added Chocola SFCs [#46]
+  - Now Chocola components are `.html` files with `<script>`, `<template>` (required), and `<styles>` tags
+  - Props and their default values are now declared at the top level of `<script>` as `export let prop = defaultValue`; default values are still optional
+  - `RUNTIME(self, ctx)` function replaced with `$runtime()`
+  - Implemented `let self = new HTMLElement` as a DX placeholder.
+
+- Updated `documentation/` and `README.md`
+- Removed comments and JSDocs the user can't see
+- Changed the main function of `compiler/index.js` from `runtime` to `compile`
+
+## 2.0.0-next.3 (Jul 24, 2026)
 
 - Removed `del-if` support [#32]
 - Removed dynamic asset bundling support (`src`, `href`, `url()`) [#39]
