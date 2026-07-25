@@ -409,8 +409,6 @@ export function processComponentElement(
 
         if (!match) return null;
 
-        const params = match[1].trim();
-
         const startIndexBrace = match.index + match[0].length - 1;
 
         let bracesCount = 0;
@@ -433,22 +431,16 @@ export function processComponentElement(
         }
 
         const fullMatch = script.substring(match.index, closingBraceIndex + 1);
-        const body = script.substring(startIndexBrace + 1, closingBraceIndex).trim();
 
-        return {
-          fullMatch,
-          params,
-          body
-        };
+        return fullMatch;
       }
 
-      let runtime = extractRuntime(script).fullMatch;
-
+      let runtime = extractRuntime(script);
       let letterEntry = runtimeMap && runtimeMap.get(compName);
       let letter;
       if (!letterEntry) {
         letter = getNextLetter(letterState);
-        runtime = runtime.replace(RUNTIME_KW, `${letter}r`);
+        runtime = runtime.replace(`${RUNTIME_KW}()`, `${letter}r(self, ctx)`);
         runtimeChunks.push(runtime);
         runtimeMap && runtimeMap.set(compName, { letter });
       } else {
