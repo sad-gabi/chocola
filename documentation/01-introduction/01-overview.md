@@ -3,26 +3,36 @@ title: Overview
 description: What is Chocola and why use it
 ---
 
-Chocola is a web framework designed for simplicity and modularity. It lets you build components by compiling JS modules into HTML templates, CSS, and JS logic, keeping your projects clean and optimized.
+Chocola is a web framework designed for simplicity and modularity. It lets you build single-file components (SFCs) — a single `.html` file containing your template, logic, and styles — and compiles them into a clean static site.
 
-```js
-// file: Counter.js
-import body from "./html/counter.html";
-import styles from "./css/counter.css";
+```html
+<!-- file: Counter.html -->
+<script>
+    let self = new HTMLElement;
 
-function RUNTIME(self, ctx) {
-  self.querySelector("button").addEventListener("click", () => {
-    ctx.count++;
-  })
-}
+    export let start = 0;
 
-export default function Counter() {
-  return {
-    body,
-    styles,
-    script: RUNTIME
-  }
-}
+    function $runtime() {
+        const btn = self.querySelector("button");
+        const number = self.querySelector(".number");
+
+        btn.addEventListener("click", () => {
+            ctx.count++;
+            number.textContent = ctx.count;
+        })
+    }
+</script>
+
+<template>
+    <button>Click me</button>
+    <div class="main">
+        <div class="number">{start}</div>
+    </div>
+</template>
+
+<style>
+    button { color: chocolate; }
+</style>
 ```
 
 Chocola handles the compilation for you, outputting a fully functional web app with vanilla JavaScript — no extra libraries needed.

@@ -7,41 +7,35 @@ Chocola components support scoped styles — CSS included in a component only af
 
 ### Usage
 
-1. Create your CSS file:
+Add a `<style>` tag to your component:
 
-```css
-/* file: my-style.css */
-button {
-  color: white;
-}
+```html
+<!-- file: MyComponent.html -->
+<template>
+    <button>Click me</button>
+</template>
+
+<style>
+    button {
+        color: white;
+    }
+</style>
 ```
 
-2. Import it in your component:
-
-```js
-// file: MyComponent.js
-import body from "path/to/body.html";
-import styles from "./my-style.css";
-
-export default function Button() {
-  return {
-    body,
-    styles
-  }
-}
-```
+The `button` rule above will only apply to `<button>` elements inside this component.
 
 To apply styles to your root element, use `:root` as a placeholder selector:
 
-```css
-/* file: my-style.css */
-:root {
-  color: red;
-}
+```html
+<style>
+    :root {
+        color: red;
+    }
 
-:root:hover {
-  color: blue;
-}
+    :root:hover {
+        color: blue;
+    }
+</style>
 ```
 
 > Scoped styles automatically take priority over global styles inside the component.

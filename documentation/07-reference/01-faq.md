@@ -23,21 +23,27 @@ The `<app>` element is the landing zone where Chocola drops all your compiled co
 
 ### What does a component look like?
 
-A component is a JavaScript file that exports a function returning an object with up to three keys: `body` (your HTML), `styles` (your CSS), and `script` (your logic). Only `body` is required.
+A component is a single `.html` file with up to three sections: `<template>` (required), `<script>` (optional), and `<style>` (optional).
 
-```js
-// file: Card.js
-import body from "./html/card.html";
-import styles from "./css/card.css";
+```html
+<!-- file: Card.html -->
+<script>
+    export let title = "Card";
+</script>
 
-export default function Card() {
-  return { body, styles };
-}
+<template>
+    <h1>{title}</h1>
+    <slot></slot>
+</template>
+
+<style>
+    h1 { color: chocolate; }
+</style>
 ```
 
 ### How do I use a component on a page?
 
-Use the component's filename as an HTML tag, written in PascalCase. A file called `UserCard.js` becomes `<UserCard></UserCard>` in your HTML. Chocola replaces that tag with the component's rendered output at compile time. Component names must be PascalCase (first letter capitalized).
+Use the component's filename (without `.html`) as an HTML tag, written in PascalCase. A file called `UserCard.html` becomes `<UserCard></UserCard>` in your HTML. Chocola replaces that tag with the component's rendered output at compile time. Component names should be PascalCase (first letter capitalized).
 
 ### Can a component render content passed into it?
 
@@ -69,7 +75,7 @@ Inside the component's `script`, you access those values through the `ctx` objec
 
 ### How do state and reactivity work?
 
-Reactivity and state will be added in Chocola 3. As of now, manually update contents via components' `RUNTIME()` function and global scripts.
+Reactivity and state will be added in Chocola 3. As of now, manually update contents via components' `$runtime()` function and global scripts.
 
 ## Templates & Logic
 
@@ -108,7 +114,6 @@ Link a stylesheet the normal way in your `src/index.html` `<head>`. Those styles
 
 Once, right after the component has been rendered into the DOM. It's the right place to attach event listeners, kick off fetches, set up timers, or anything else that needs the HTML to be there already.
 
-### What are `self` and `ctx`?
+### What is `self`?
 
 - `self` is the root DOM node of your component instance. Always use `self.querySelector()` instead of `document.querySelector()` to avoid bugs when multiple instances of the same component exist.
-- `ctx` is where your props and state live. You can read props from it, write new state to it, and set default values: `function RUNTIME(self, ctx = { count: 0 })`.
