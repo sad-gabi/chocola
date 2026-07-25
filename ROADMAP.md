@@ -31,6 +31,7 @@ Hardening V1, giving components a proper file format and adding dynamic renderin
 Introducing the `$` prefix.
 
 ### Breaking changes
+- Runtime component instancing
 - CSR SPA router
 - Declarative components imports
 - New SFC (Single-File Components) system with tags: `<head>`, `<script>`, `<template>`, `<style>`
