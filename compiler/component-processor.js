@@ -435,19 +435,45 @@ export function processComponentElement(
         return fullMatch;
       }
 
-      let runtime = extractRuntime(script);
-      let letterEntry = runtimeMap && runtimeMap.get(compName);
-      let letter;
-      if (!letterEntry) {
-        letter = getNextLetter(letterState);
-        runtime = runtime.replace(`${RUNTIME_KW}()`, `${letter}r(self, ctx)`);
-        runtimeChunks.push(runtime);
-        runtimeMap && runtimeMap.set(compName, { letter });
-      } else {
-        letter = letterEntry.letter;
+      function extractProps(script) {
+        const propsRegex = /export\s+let\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*(?:=\s*([^;]+))?;/g;
+
+        let props = [];
+        let match;
+
+        while ((match = propsRegex.exec(script)) !== null) {
+          props.push(match[1].trim());
+        }
+
+        return props;
       }
 
-      runtimeChunks.push(`${letter}r(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
+      let runtime = extractRuntime(script);
+      let props = extractProps(script);
+
+      if (runtime) {
+        if (props.length > 0) {
+          props.forEach(prop => {
+            console.log(`${compName} replacing prop: ${prop}`)
+            runtime = runtime.replace(prop, `ctx.${prop}`);
+          });
+
+          console.log(runtime)
+        }
+
+        let letterEntry = runtimeMap && runtimeMap.get(compName);
+        let letter;
+        if (!letterEntry) {
+          letter = getNextLetter(letterState);
+          runtime = runtime.replace(`${RUNTIME_KW}()`, `${letter}r(self, ctx)`);
+          runtimeChunks.push(runtime);
+          runtimeMap && runtimeMap.set(compName, { letter });
+        } else {
+          letter = letterEntry.letter;
+        }
+
+        runtimeChunks.push(`${letter}r(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
+      }
     }
   }
 
@@ -497,7 +523,6 @@ export function processAllComponents(appElements, loadedComponents, pageSourceFi
     processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry, pageSourceFile, pageSourceContent);
   });
   const runtimeScript = runtimeChunks.join("\n");
-  console.log(runtimeScript)
   const hasComponents = runtimeChunks.length > 0;
   const scopesCss = beautify.css(scopedStyles.join("\n"));
 
