@@ -66,6 +66,10 @@ export function appendStylesheetLink(doc, filename) {
   doc.head.appendChild(linkEl);
 }
 
+export function getScriptElements(doc) {
+  return Array.from(doc.querySelectorAll("script[src]"));
+}
+
 export function appendRuntimeScript(doc, filename) {
   const runtimeScriptEl = doc.createElement("script");
   runtimeScriptEl.type = "module";

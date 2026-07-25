@@ -6,6 +6,7 @@ import {
   validateAppContainer,
   getAppElements,
   getAssetLinks,
+  getScriptElements,
   appendRuntimeScript,
   appendStylesheetLink,
   serializeDOM,
@@ -20,6 +21,7 @@ import {
   getComponents,
   getSrcIndex,
   processIcons,
+  processScript,
   processStylesheet,
 } from "./pipeline.js";
 
@@ -91,6 +93,7 @@ async function loadAndDisplayComponents(srcComponentsPath) {
 
 async function processAssets(doc, rootDir, srcDir, outDirPath) {
   const { stylesheets, icons } = getAssetLinks(doc);
+  const scripts = getScriptElements(doc);
   const fileIds = [];
   let cssContents = [];
 
@@ -101,6 +104,10 @@ async function processAssets(doc, rootDir, srcDir, outDirPath) {
 
   for (const link of icons) {
     await processIcons(link, rootDir, srcDir, outDirPath);
+  }
+
+  for (const script of scripts) {
+    await processScript(doc, script, rootDir, srcDir, outDirPath, fileIds);
   }
   return cssContents
 }

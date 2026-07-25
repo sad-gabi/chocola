@@ -83,6 +83,32 @@ export async function processIcons(link, rootDir, srcDir, outDirPath) {
   }
 }
 
+export async function processScript(doc, script, rootDir, srcDir, outDirPath, fileIds) {
+  try {
+    const src = script.getAttribute("src");
+    if (src.startsWith("http://") || src.startsWith("https://")) return;
+    const scriptPath = path.join(rootDir, srcDir, src);
+    const content = await fs.readFile(scriptPath, { encoding: "utf8" });
+    const jsFileName = "js-" + genRandomId(fileIds, 6) + ".js";
+    await fs.writeFile(path.join(outDirPath, jsFileName), content);
+
+    const newScript = doc.createElement("script");
+    for (const attr of script.attributes) {
+      if (attr.name === "src") {
+        newScript.setAttribute("src", "./" + jsFileName);
+      } else {
+        newScript.setAttribute(attr.name, attr.value);
+      }
+    }
+    if (script.textContent.trim()) {
+      newScript.textContent = script.textContent;
+    }
+    script.parentNode.replaceChild(newScript, script);
+  } catch (err) {
+    throwError(`Failed to process script: ${err}`);
+  }
+}
+
 export async function copyStaticDir(srcPath, outDirPath) {
   const staticSrc = path.join(srcPath, "static");
   const staticDest = path.join(outDirPath, "static");
