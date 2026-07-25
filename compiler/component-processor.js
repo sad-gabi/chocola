@@ -225,7 +225,7 @@ export function processComponentElement(
     console.warn(chalk.yellow(`${compName} — component is missing a <template>`));
     return false;
   }
-  
+
   const fragment = JSDOM.fragment(template);
 
   const slotFragment = JSDOM.fragment(elInnerHtml);
@@ -403,13 +403,53 @@ export function processComponentElement(
       script = script.replace(ctxRegex, "ctx");
       script = script.replace(/\$runtime\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
 
+      function extractRuntime(script) {
+        const startRegex = /(?:async\s+)?function\s+\$runtime\(([^)]*)\)\s*\{/;
+        const match = script.match(startRegex);
+
+        if (!match) return null;
+
+        const params = match[1].trim();
+
+        const startIndexBrace = match.index + match[0].length - 1;
+
+        let bracesCount = 0;
+        let closingBraceIndex = -1;
+
+        for (let i = startIndexBrace; i < script.length; i++) {
+          if (script[i] === "{") {
+            bracesCount++;
+          } else if (script[i] === "}") {
+            bracesCount--;
+            if (bracesCount === 0) {
+              closingBraceIndex = i;
+              break;
+            }
+          }
+        }
+
+        if (closingBraceIndex === -1) {
+          throw new Error(`${compName} $runtime function has unclosed curly braces.`);
+        }
+
+        const fullMatch = script.substring(match.index, closingBraceIndex + 1);
+        const body = script.substring(startIndexBrace + 1, closingBraceIndex).trim();
+
+        return {
+          fullMatch,
+          params,
+          body
+        };
+      }
+
+      let runtime = extractRuntime(script).fullMatch;
+
       let letterEntry = runtimeMap && runtimeMap.get(compName);
       let letter;
       if (!letterEntry) {
         letter = getNextLetter(letterState);
-        script = script.replace(RUNTIME_KW, `${letter}r`);
-        console.log(script)
-        runtimeChunks.push(script);
+        runtime = runtime.replace(RUNTIME_KW, `${letter}r`);
+        runtimeChunks.push(runtime);
         runtimeMap && runtimeMap.set(compName, { letter });
       } else {
         letter = letterEntry.letter;
@@ -465,6 +505,7 @@ export function processAllComponents(appElements, loadedComponents, pageSourceFi
     processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry, pageSourceFile, pageSourceContent);
   });
   const runtimeScript = runtimeChunks.join("\n");
+  console.log(runtimeScript)
   const hasComponents = runtimeChunks.length > 0;
   const scopesCss = beautify.css(scopedStyles.join("\n"));
 
