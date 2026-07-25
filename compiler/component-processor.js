@@ -111,6 +111,17 @@ function removeDelIfAttr(el) {
   el.removeAttribute("del:if");
 }
 
+function extractPropsDefaults(script) {
+  if (!script) return [];
+  const propsRegex = /export\s+let\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*(?:=\s*([^;]+))?;/g;
+  let props = [];
+  let match;
+  while ((match = propsRegex.exec(script)) !== null) {
+    props.push({ name: match[1].trim(), defaultValue: match[2]?.trim() });
+  }
+  return props;
+}
+
 function interpolateNode(root, ctxProxy) {
   const stack = [root];
   while (stack.length) {
@@ -200,20 +211,6 @@ export function processComponentElement(
   if (!instance || instance === undefined) return false;
   if (renderChain && renderChain.includes(compName)) return false;
 
-  let ctx;
-  if (staticCtxRegistry && staticCtxRegistry.has(element)) {
-    ctx = staticCtxRegistry.get(element);
-  } else {
-    ctx = extractContextFromElement(element);
-    staticCtxRegistry && staticCtxRegistry.set(element, ctx);
-  }
-  const elInnerHtml = element.innerHTML;
-
-  const ctxProxy = new Proxy(ctx, {
-    has() { return true; },
-    get(target, key) { return target[key]; }
-  });
-
   instance = protectCurlyBraces(instance);
   const dom = new JSDOM(instance);
   const doc = dom.window.document;
@@ -225,6 +222,37 @@ export function processComponentElement(
     console.warn(chalk.yellow(`${compName} — component is missing a <template>`));
     return false;
   }
+
+  // Extract props with defaults from component script
+  const compProps = extractPropsDefaults(script);
+
+  let ctx;
+  if (staticCtxRegistry && staticCtxRegistry.has(element)) {
+    ctx = staticCtxRegistry.get(element);
+  } else {
+    ctx = extractContextFromElement(element);
+    staticCtxRegistry && staticCtxRegistry.set(element, ctx);
+  }
+
+  // Apply default values for props not provided on the element
+  if (compProps.length > 0) {
+    compProps.forEach(({ name, defaultValue }) => {
+      if (defaultValue !== undefined && !(name in ctx)) {
+        try {
+          ctx[name] = compileExpression(defaultValue, false)();
+        } catch {
+          ctx[name] = defaultValue;
+        }
+      }
+    });
+  }
+
+  const elInnerHtml = element.innerHTML;
+
+  const ctxProxy = new Proxy(ctx, {
+    has() { return true; },
+    get(target, key) { return target[key]; }
+  });
 
   const fragment = JSDOM.fragment(template);
 
@@ -399,9 +427,14 @@ export function processComponentElement(
       for (const [key, value] of Object.entries(runtimeCtx)) {
         ctxDef += `ctx.${key} = ctx.${key}||${JSON.stringify(value)};\n`;
       }
+      // Add defaults from export let declarations
+      for (const { name, defaultValue } of compProps) {
+        if (defaultValue !== undefined) {
+          ctxDef += `ctx.${name} = ctx.${name}||${defaultValue};\n`;
+        }
+      }
 
       script = script.replace(ctxRegex, "ctx");
-      script = script.replace(/\$runtime\([^)]*\)\s*{/, match => match + "\n" + ctxDef);
 
       function extractRuntime(script) {
         const startRegex = /(?:async\s+)?function\s+\$runtime\(([^)]*)\)\s*\{/;
@@ -435,31 +468,18 @@ export function processComponentElement(
         return fullMatch;
       }
 
-      function extractProps(script) {
-        const propsRegex = /export\s+let\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*(?:=\s*([^;]+))?;/g;
-
-        let props = [];
-        let match;
-
-        while ((match = propsRegex.exec(script)) !== null) {
-          props.push(match[1].trim());
-        }
-
-        return props;
-      }
-
       let runtime = extractRuntime(script);
-      let props = extractProps(script);
 
       if (runtime) {
-        if (props.length > 0) {
-          props.forEach(prop => {
-            console.log(`${compName} replacing prop: ${prop}`)
-            runtime = runtime.replace(prop, `ctx.${prop}`);
-          });
-
-          console.log(runtime)
+        for (const { name } of compProps) {
+          console.log(`${compName} replacing prop: ${name}`)
+          runtime = runtime.replace(name, `ctx.${name}`);
         }
+
+        // Inject ctxDef after props replacement so ctxDef lines aren't double-replaced
+        runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + ctxDef);
+
+        console.log(runtime)
 
         let letterEntry = runtimeMap && runtimeMap.get(compName);
         let letter;
