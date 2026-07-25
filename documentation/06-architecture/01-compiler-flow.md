@@ -34,11 +34,8 @@ description: How the Chocola compiler works internally
 ### 3. Component Discovery (`compiler/pipeline.js`)
 
 `getComponents(libDir)`:
-- Reads all `.js` files in the components directory
-- Only processes files starting with an uppercase letter (e.g., `Button.js`)
-- Imports each module (inlining `.html`/`.css` imports via `loadWithAssets`)
-- Calls the default export function to get the component instance
-- Stores `__sourceFile` on each instance for error reporting
+- Reads all `.html` files in the components directory
+- Loads each file as a raw HTML string
 - Returns a `Map<lowercase-filename, instance>`
 
 ### 4. DOM Processing (`compiler/dom-processor.js`)
@@ -53,8 +50,8 @@ description: How the Chocola compiler works internally
 For each element inside `<app>`:
 
 1. **Match** — checks if tag name corresponds to a loaded component
-2. **Context** — extracts attributes as context (`ctx.*`)
-3. **Chain validation** — validates `if`/`elif`/`else`/`del:if` structure on both slot content and component body separately before slot replacement, throwing with file location on violation
+2. **Context** — extracts attributes as context
+3. **Chain validation** — validates `if`/`elif`/`else`/`del:if` structure on both slot content and component body separately, throwing with file location on violation
 4. **Template** — renders component body via JSDOM fragment
 5. **Slots** — replaces `<slot>` elements with the original inner HTML
 6. **Attribute interpolation** — evaluates `{expr}` in attributes using `with(ctx)`
@@ -76,7 +73,7 @@ For each element inside `<app>`:
     - Simple selectors (`.foo`) generate both AND-scoped (`.cssId.foo`) and descendant-scoped (`.cssId .foo`) variants
     - Selectors with combinators use descendant scoping only
     - `:root` and `:root.class` scope to the root element only
-11. **Runtime Chunk** — generates a runtime function call: `aRUNTIME(el, ctx)`
+11. **Runtime Chunk** — generates a runtime function call: `ar(el, ctx)` (the letter prefix is auto-incremented per component)
 12. **Recursion** — processes nested components within the current component (with cycle detection via `renderChain`)
 
 ### 6. Runtime Generation (`compiler/runtime-generator.js`)
@@ -110,8 +107,8 @@ compiler/index.js
 
 ## Key Concepts
 
-- **Components**: ES modules with default export returning `{ body, script, styles, effects }`
-- **Asset inlining**: `.html`/`.css` imports in components are inlined at build time via `loadWithAssets`
+- **Components**: Single-file `.html` components with `<template>`, `<script>`, and `<style>` sections
+- **File-based loading**: `.html` component files are loaded as raw strings and parsed by the compiler
 - **CSS Scoping**: Component styles are scoped by rewriting selectors under a unique CSS class ID. Both root and descendant matching via dual selectors (AND + descendant).
 - **Runtime scripts**: Components with dynamic behavior get a unique ID and a runtime call that re-attaches event listeners/effects on page load
 - **Conditional chains**: `if`/`del:if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with file location (line included when the error is within the same source file)

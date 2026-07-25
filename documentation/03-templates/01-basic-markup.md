@@ -15,7 +15,7 @@ Chocola supports standard HTML attributes plus custom ones. JavaScript expressio
 
 ## Component Props
 
-Props are values passed to a component's context (`ctx`). They do not appear as HTML attributes in the DOM.
+Props are values passed to a component's context. They do not appear as HTML attributes in the DOM.
 
 ```html
 <MyComponent text="Some text" color="{myColor}" />

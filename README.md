@@ -7,37 +7,24 @@ Chocola is a JavaScript library for creating web user interfaces.
 ## Usage
 
 ```html
-<!-- counter.html -->
-<div>
-  <button title={title}>{text}</button>
+<!-- MyTitle.html -->
+<script>
+    let self = new HTMLElement;
 
-  <div class="main">
-    <div class="number">{count}</div>
-  </div>
-</div>
-```
+    export let title = "Default title";
 
-```js
-import body from "./html/counter.html";
-import styles from "./css/counter.css";
+    function $runtime() {
+        console.log("Component mounted:", self)
+    }
+</script>
 
-function RUNTIME(self, ctx) {
-  const btn = self.querySelector("button");
-  const number = self.querySelector(".number");
+<template>
+    <h1>{title}</h1>
+</template>
 
-  btn.addEventListener("click", () => {
-    ctx.count++;
-    number.textContent = ctx.count;
-  })
-}
-
-export default function Counter() {
-  return {
-    body,
-    styles,
-    script: RUNTIME
-  }
-}
+<style>
+    button { color: chocolate; }
+</style>
 ```
 
 ## Documentation

@@ -1,16 +1,6 @@
 import path from "path";
 import { getChocolaConfig } from "../utils.js";
 
-/**
- * Loads and merges Chocola configuration with defaults
- * @param {import("fs").PathLike} rootDir
- * @returns {Promise<{
- *   srcDir: string,
- *   outDir: string,
- *   libDir: string,
- *   emptyOutDir: boolean
- * }>}
- */
 export async function loadConfig(rootDir) {
   const config = await getChocolaConfig(rootDir);
   const bundleConfig = config.bundle || {};
@@ -23,12 +13,6 @@ export async function loadConfig(rootDir) {
   return { srcDir, outDir, libDir, emptyOutDir };
 }
 
-/**
- * Resolves all path directories based on configuration
- * @param {import("fs").PathLike} rootDir
- * @param {object} config
- * @returns {object}
- */
 export function resolvePaths(rootDir, config) {
   return {
     outDir: path.join(rootDir, config.outDir),

@@ -3,80 +3,11 @@ import path from "path";
 import { pathToFileURL } from "url";
 import chalk from "chalk";
 
-/**
- * Throws a formatted error message and exits
- * @param {string|Error} err - Error message or Error object
- * @throws {Error}
- */
 export function throwError(err) {
   console.log(chalk.red.bold("Error!"), "A fatal error has occurred:\n");
   throw new Error(err);
 }
 
-/**
- * Loads a JavaScript module and inlines asset imports (HTML/CSS files)
- * This allows components to import external template files as strings
- * @param {import("fs").PathLike} filePath - Path to the JavaScript file
- * @returns {Promise<object>} - The imported module
- * @example
- * // Component with asset import
- * import template from "./button.html";
- * export default function Button() { return { body: template }; }
- */
-export async function loadWithAssets(filePath) {
-  let code;
-  try {
-    code = await fs.readFile(filePath, "utf8");
-  } catch (err) {
-    throwError(`Failed to read component file "${filePath}": ${err.message || err}`);
-  }
-
-  const importRegex = /import\s+(\w+)\s+from\s+["'](.+?\.(html|css))["'];?/g;
-
-  const replacements = [];
-  let match;
-  while ((match = importRegex.exec(code))) {
-    const varName = match[1];
-    const relPath = match[2];
-    const absPath = path.resolve(path.dirname(filePath), relPath);
-
-    let content;
-    try {
-      content = await fs.readFile(absPath, "utf8");
-    } catch (err) {
-      throwError(
-        `Failed to read imported file "${relPath}" (resolved to "${absPath}") ` +
-        `for variable "${varName}" in component "${filePath}": ${err.message || err}`
-      );
-    }
-
-    replacements.push({ from: match[0], to: `const ${varName} = ${JSON.stringify(content)};` });
-  }
-
-  for (const { from, to } of replacements) {
-    code = code.replace(from, to);
-  }
-
-  const dataUrl =
-    "data:text/javascript;base64," +
-    Buffer.from(code).toString("base64");
-
-  try {
-    const mod = await import(dataUrl);
-    return mod;
-  } catch (err) {
-    throwError(
-      `Failed to evaluate component "${filePath}": ${err.message || err}`
-    );
-  }
-}
-
-/**
- * Generates a random ID string
- * @param {Array} collection - Array to track used IDs (prevents duplicates)
- * @param {number} length - Desired length of the ID (default: 10)
- * @returns {string} - Unique random ID
- */
 export function genRandomId(collection = null, length = 10, lettersOnly = false) {
   let id;
   if (lettersOnly) {
@@ -93,14 +24,6 @@ export function genRandomId(collection = null, length = 10, lettersOnly = false)
   }
 }
 
-/**
- * Increments a letter or sequence of letters like Excel columns (a → b, z → aa)
- * @param {string} letters - Letter(s) to increment
- * @returns {string} - Incremented letter(s)
- * @example
- * incrementAlfabet("a") // "b"
- * incrementAlfabet("z") // "aa"
- */
 export function incrementAlfabet(letters) {
   let arr = letters.split("");
   let i = arr.length - 1;
@@ -119,11 +42,6 @@ export function incrementAlfabet(letters) {
   return "a" + arr.join("");
 }
 
-/**
- * Checks if a string is a valid HTTP/HTTPS URL
- * @param {string} str - String to check
- * @returns {boolean} - True if valid web link, false otherwise
- */
 export function isWebLink(str) {
   try {
     const url = new URL(str);
@@ -136,24 +54,12 @@ export function isWebLink(str) {
 const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";
 const RBRACE_PH = "_%%CHOCOLA-RBRACE%%_";
 
-/**
- * Replaces HTML entities for curly braces with placeholders before JSDOM parsing.
- * This prevents JSDOM from decoding them into literal braces before binding processing.
- * @param {string} html - Raw HTML content
- * @returns {string} - HTML with curly brace entities replaced
- */
 export function protectCurlyBraces(html) {
   return html
     .replace(/&(?:lbrace|#123|#x7B);/gi, LBRACE_PH)
     .replace(/&(?:rcub|#125|#x7D);/gi, RBRACE_PH);
 }
 
-/**
- * Restores curly brace placeholders back to literal characters.
- * Called after binding processing is complete and before final output.
- * @param {string} html - Serialized HTML with placeholders
- * @returns {string} - HTML with literal curly braces restored
- */
 export function restoreCurlyBraces(html) {
   return html
     .replace(/_%%CHOCOLA-LBRACE%%_/g, "{")

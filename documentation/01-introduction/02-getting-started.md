@@ -9,11 +9,7 @@ description: Set up a Chocola project from scratch
 my-app/
 ├── src/
 │   ├── lib/
-│   │   ├── css/
-│   │   └── html/
 │   ├── static/
-│   ├── styles/
-│   ├── routes/
 │   └── index.html
 ├── chocola.config.json
 ├── chocola.server.js

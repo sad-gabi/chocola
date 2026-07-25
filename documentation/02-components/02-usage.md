@@ -7,60 +7,50 @@ Once you have created your Chocola components, you can use them directly in HTML
 
 ## Component Tag Names
 
-- Use the file name of your component (without the `.js` extension) as the HTML tag.
+- Use the filename of your component (without `.html`) as the HTML tag.
 - Component names use PascalCase (e.g., `Counter`, `UserProfile`, `TodoItem`).
 
 ## Passing Props
 
-Props are custom attributes you can pass to a component to provide values to render.
+Props are custom attributes you can pass to a component. They map to `export let` declarations in the component's `<script>`.
 
 ```html
 <Counter start="{5}" label="Clicks"></Counter>
 ```
 
 - Here, `start` and `label` are props.
-- Props are passed as strings by default. Special props like numbers, booleans, or expressions must be wrapped in `{}` to be converted automatically by Chocola, or you can convert them manually inside the component.
+- String values are passed as-is.
+- Expressions, numbers, booleans, and other dynamic values must be wrapped in `{ }` to be evaluated.
 
 ## Accessing Props in the Component
 
-Props are available in the component context (`ctx`) during runtime:
+Props are available inside `$runtime`:
 
-```js
-function RUNTIME(self, ctx) {
-  ctx.count = ctx.start || 0;
+```html
+<script>
+    export let label = "Counter";
+    export let start = 0;
 
-  const button = self.querySelector("button");
-  button.textContent = ctx.label || "Counter";
+    function $runtime() {
+        let count = start;
+        const button = self.querySelector("button");
 
-  button.addEventListener("click", () => {
-    ctx.count++;
-  });
-}
+        button.addEventListener("click", () => {
+            count++;
+        });
+    }
+</script>
 ```
 
-> Note: `ctx` stores both props and component state.
+If a prop is not provided by the parent, its default value is used.
 
-## Example Rendering
+## Example
 
 ```html
 <!-- file: index.html -->
 <app>
-  <Counter title="Increment Count" start="{5}" label="Clicks"></Counter>
+    <Counter title="Increment Count" start="{5}" label="Clicks"></Counter>
 </app>
 ```
 
-After Chocola compiles the app:
-
-```html
-<!-- file: dist/index.html -->
-<app>
-  <div>
-    <button title="Increment Count">Clicks</button>
-    <div class="main">
-      <div class="number">5</div>
-    </div>
-  </div>
-</app>
-```
-
-The component renders with the provided prop values.
+After Chocola compiles the app, the `<Counter>` tag is replaced with the component's rendered output.
