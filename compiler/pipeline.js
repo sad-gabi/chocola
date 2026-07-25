@@ -3,18 +3,6 @@ import { throwError, genRandomId } from "./utils.js";
 import { readMyFile, checkFile } from "./fs.js";
 import path from "path";
 
-/**
- * Discovers and loads all components from a library directory.
- * Components are JavaScript files that start with an uppercase letter.
- * They must have a default export that is a function
- * @param {import("node:fs").PathLike} libDir - Directory containing component files
- * @returns {Promise<{
- *   componentsLib: string[],
- *   loadedComponents: Map<string, object>,
- *   notDefComps: string[]
- * }>}
- * @throws {Error} if libDir cannot be found
- */
 export async function getComponents(libDir) {
   try {
     let componentsLib = [];
@@ -50,15 +38,6 @@ export async function getComponents(libDir) {
   }
 }
 
-/**
- * Loads the project index file
- * @param {import("fs").PathLike} srcPath - Source directory
- * @returns {Promise<{
- *   srcHtmlFile: string | null,
- *   srcChocoFile: string | null
- * }>}
- * @throws {Error}
- */
 export async function getSrcIndex(srcPath) {
   const srcHtmlPath = path.join(srcPath, "index.html");
 
@@ -76,15 +55,6 @@ export async function getSrcIndex(srcPath) {
   }
 }
 
-/**
- * Processes stylesheet links: copies CSS files to output and updates link href
- * @param {HTMLLinkElement} link - The link element to process
- * @param {import("fs").PathLike} rootDir - Root project directory
- * @param {string} srcDir - Source directory name
- * @param {import("fs").PathLike} outDirPath - Output directory path
- * @param {Array} fileIds - Array to track used file IDs
- * @throws {Error} if stylesheet cannot be read or written
- */
 export async function processStylesheet(link, rootDir, srcDir, outDirPath, fileIds) {
   try {
     const href = link.href;
@@ -102,14 +72,6 @@ export async function processStylesheet(link, rootDir, srcDir, outDirPath, fileI
   }
 }
 
-/**
- * Processes icon links: copies icon files to output directory
- * @param {HTMLLinkElement} link - The link element to process
- * @param {import("fs").PathLike} rootDir - Root project directory
- * @param {string} srcDir - Source directory name
- * @param {import("fs").PathLike} outDirPath - Output directory path
- * @throws {Error} if icon cannot be copied
- */
 export async function processIcons(link, rootDir, srcDir, outDirPath) {
   try {
     const href = link.href;
@@ -121,13 +83,6 @@ export async function processIcons(link, rootDir, srcDir, outDirPath) {
   }
 }
 
-/**
- * Copies the static/ directory from source to output.
- * The entire static/ directory tree is copied recursively.
- * Silently skips if static/ does not exist.
- * @param {import("fs").PathLike} srcPath - Source directory path
- * @param {import("fs").PathLike} outDirPath - Output directory path
- */
 export async function copyStaticDir(srcPath, outDirPath) {
   const staticSrc = path.join(srcPath, "static");
   const staticDest = path.join(outDirPath, "static");
@@ -135,6 +90,5 @@ export async function copyStaticDir(srcPath, outDirPath) {
     await fs.access(staticSrc);
     await fs.cp(staticSrc, staticDest, { recursive: true, force: true });
   } catch {
-    // static/ directory doesn't exist — nothing to copy
   }
 }

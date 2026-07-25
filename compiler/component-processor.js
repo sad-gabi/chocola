@@ -196,15 +196,6 @@ function validateChainStructure(parent, sourceFile, sourceContent, parentContent
   }
 }
 
-/**
- * Processes a single component element and inserts it into the DOM
- * @param {Element} element
- * @param {Map} loadedComponents
- * @param {Array} runtimeChunks
- * @param {Array} compIdColl
- * @param {object} letterState - { value: string }
- * @returns {boolean} - true if component was processed, false if not found
- */
 export function processComponentElement(
   element,
   loadedComponents,
@@ -239,7 +230,6 @@ export function processComponentElement(
     return false;
   }
 
-  // Extract props with defaults from component script
   const compProps = extractPropsDefaults(script);
 
   let ctx;
@@ -250,7 +240,6 @@ export function processComponentElement(
     staticCtxRegistry && staticCtxRegistry.set(element, ctx);
   }
 
-  // Apply default values for props not provided on the element
   if (compProps.length > 0) {
     compProps.forEach(({ name, defaultValue }) => {
       if (defaultValue !== undefined && !(name in ctx)) {
@@ -443,7 +432,7 @@ export function processComponentElement(
       for (const [key, value] of Object.entries(runtimeCtx)) {
         ctxDef += `ctx.${key} = ctx.${key}||${JSON.stringify(value)};\n`;
       }
-      // Add defaults from export let declarations
+
       for (const { name, defaultValue } of compProps) {
         if (defaultValue !== undefined) {
           ctxDef += `ctx.${name} = ctx.${name}||${defaultValue};\n`;
@@ -488,14 +477,10 @@ export function processComponentElement(
 
       if (runtime) {
         for (const { name } of compProps) {
-          console.log(`${compName} replacing prop: ${name}`)
           runtime = runtime.replace(name, `ctx.${name}`);
         }
 
-        // Inject ctxDef after props replacement so ctxDef lines aren't double-replaced
         runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + ctxDef);
-
-        console.log(runtime)
 
         let letterEntry = runtimeMap && runtimeMap.get(compName);
         let letter;
@@ -534,16 +519,6 @@ export function processComponentElement(
   return true;
 }
 
-/**
- * Processes all components in the app container
- * @param {Element[]} appElements
- * @param {Map} loadedComponents
- * @returns {{
- *   runtimeScript: string,
- *   hasComponents: boolean
- *   scopesCss: CSSString
- * }}
- */
 export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent) {
   let runtimeChunks = [];
   let compIdColl = [];
@@ -565,11 +540,6 @@ export function processAllComponents(appElements, loadedComponents, pageSourceFi
   return { runtimeScript, hasComponents, scopesCss };
 }
 
-/**
- * Gets the next letter in sequence or starts with 'a'
- * @param {object} letterState - { value: string }
- * @returns {string}
- */
 function getNextLetter(letterState) {
   if (!letterState.value) {
     letterState.value = "a";

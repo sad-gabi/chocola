@@ -105,14 +105,6 @@ async function processAssets(doc, rootDir, srcDir, outDirPath) {
   return cssContents
 }
 
-/**
- * Compiles a static build of your Chocola project from the directory provided.
- * @param {import("fs").PathLike} rootDir
- * @param {Object<{
- * isHotReload?: boolean
- * }
- * >} config
- */
 export default async function compile(rootDir, buildConfig) {
   const isHotReload = buildConfig?.isHotReload || null;
   !isHotReload && logBanner();
