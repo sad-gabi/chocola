@@ -38,7 +38,9 @@ Introducing the `$` prefix.
 - New `$runtime` function replacing `RUNTIME`.
 
 ### New features
-- ESM modules and dependencies imports
+- Scripts, ESM modules and dependencies bundling
+- `bind:` attribute for manipulating DOM elements.
+- Scoped functions
 - `for:each` and `switch/case` logic blocks
 - `<as:html></as:html>` blocks for raw HTML injection
 - `<const value="{foo}">` tag to define a local constant
