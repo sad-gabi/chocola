@@ -434,6 +434,7 @@ export function processComponentElement(
   }));
   const condChains = new Map();
   const bindings = [];
+  const elBindIds = new Map();
   let bindCounter = 0;
 
   childEntries.forEach(({ el: child, parent }) => {
@@ -502,8 +503,12 @@ export function processComponentElement(
       if (attribute.name.startsWith("bind:")) {
         const prop = attribute.name.slice(5);
         const varName = attribute.value;
-        const bindId = "b" + (bindCounter++);
-        child.setAttribute("data-chbind", bindId);
+        let bindId = elBindIds.get(child);
+        if (!bindId) {
+          bindId = "b" + (bindCounter++);
+          elBindIds.set(child, bindId);
+          child.setAttribute("data-chbind-" + bindId, "");
+        }
         bindings.push({ prop, varName, bindId });
         child.removeAttribute(attribute.name);
         return;
@@ -584,7 +589,7 @@ export function processComponentElement(
           if (bindings.length > 0) {
             injectCode += "\n" + bindings.map(b => {
               const accessor = b.prop === "self" ? "" : "." + b.prop;
-              return "let " + b.varName + " = self.querySelector('[data-chbind=\"" + b.bindId + "\"]')" + accessor + ";";
+              return "let " + b.varName + " = self.querySelector('[data-chbind-" + b.bindId + "]')" + accessor + ";";
             }).join("\n") + "\n";
           }
           if (topFuncs.length > 0) {
