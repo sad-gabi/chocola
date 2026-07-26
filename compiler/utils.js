@@ -5,16 +5,6 @@ export function throwError(err) {
   throw new Error(err);
 }
 
-export function hasDelIfAttr(el) {
-  return el.hasAttribute("del:if");
-}
-export function getDelIfAttr(el) {
-  return el.getAttribute("del:if");
-}
-export function removeDelIfAttr(el) {
-  el.removeAttribute("del:if");
-}
-
 export function genRandomId(collection = null, length = 10, lettersOnly = false) {
   let id;
   if (lettersOnly) {
@@ -49,31 +39,4 @@ export function incrementAlfabet(letters) {
   return "a" + arr.join("");
 }
 
-const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";
-const RBRACE_PH = "_%%CHOCOLA-RBRACE%%_";
-
-export function protectCurlyBraces(html) {
-  return html
-    .replace(/&(?:lbrace|#123|#x7B);/gi, LBRACE_PH)
-    .replace(/&(?:rcub|#125|#x7D);/gi, RBRACE_PH);
-}
-
-export function restoreCurlyBraces(html) {
-  return html
-    .replace(/_%%CHOCOLA-LBRACE%%_/g, "{")
-    .replace(/_%%CHOCOLA-RBRACE%%_/g, "}");
-}
-
 const ID_LETTERS = "abcdefghijklmnopqrstuvwxyz";
-const compiledCache = new Map();
-export function compileExpression(expr, useCtx) {
-  const key = useCtx ? `ctx:${expr}` : `raw:${expr}`;
-  let fn = compiledCache.get(key);
-  if (!fn) {
-    fn = useCtx
-      ? new Function("ctx", `with(ctx) { return (${expr}); }`)
-      : new Function(`"use strict"; return (${expr})`);
-    compiledCache.set(key, fn);
-  }
-  return fn;
-}

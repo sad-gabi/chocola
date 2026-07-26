@@ -1,7 +1,9 @@
 import { JSDOM } from "jsdom";
 import { promises as fs } from "fs";
 import path from "path";
-import { throwError, protectCurlyBraces, restoreCurlyBraces, compileExpression } from "./utils.js";
+import { protectCurlyBraces, restoreCurlyBraces } from "../utils.js";
+import { extractContextFromElement } from "../parser/context.js";
+import { throwError } from "./utils.js";
 import { readMyFile } from "./fs.js";
 
 export function createDOM(srcIndexContent) {
@@ -18,24 +20,6 @@ export function validateAppContainer(doc) {
 
 export function getAppElements(appContainer) {
   return Array.from(appContainer.querySelectorAll("*"));
-}
-
-export function extractContextFromElement(element) {
-  const ctx = {};
-  for (const attr of element.attributes) {
-    const key = attr.name;
-    const val = attr.value;
-    if (!val.includes("{")) { ctx[key] = val; continue; }
-    const matches = [...val.matchAll(/\{([^}]+)\}/g)];
-    if (matches.length === 1 && matches[0][0] === val) {
-      try {
-        ctx[key] = compileExpression(matches[0][1], false)();
-        continue;
-      } catch {}
-    }
-    ctx[key] = val;
-  }
-  return ctx;
 }
 
 export async function serializeDOM(dom) {

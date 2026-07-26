@@ -15,7 +15,8 @@ import {
 } from "./dom-processor.js";
 import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
-import { genRandomId, throwError, compileExpression, hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "./utils.js";
+import { genRandomId, throwError } from "./utils.js";
+import { compileExpression, hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "../parser/index.js";
 import {
   copyStaticDir,
   getComponents,

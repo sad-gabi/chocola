@@ -10,3 +10,18 @@ export async function getChocolaConfig(__rootdir) {
         throwError("An error occurred while fetching the Chocola config file:\n" + err);
     }
 }
+
+const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";
+const RBRACE_PH = "_%%CHOCOLA-RBRACE%%_";
+
+export function protectCurlyBraces(html) {
+  return html
+    .replace(/&(?:lbrace|#123|#x7B);/gi, LBRACE_PH)
+    .replace(/&(?:rcub|#125|#x7D);/gi, RBRACE_PH);
+}
+
+export function restoreCurlyBraces(html) {
+  return html
+    .replace(/_%%CHOCOLA-LBRACE%%_/g, "{")
+    .replace(/_%%CHOCOLA-RBRACE%%_/g, "}");
+}
