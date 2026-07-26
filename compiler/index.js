@@ -1,4 +1,5 @@
 import { promises as fs } from "fs";
+import path from "path";
 import chalk from "./chalk.js";
 import { loadConfig, resolvePaths } from "./config.js";
 import {
@@ -207,8 +208,15 @@ export default async function compile(rootDir, buildConfig) {
 
   processPageConditionals(appContainer);
 
+  const chocolaDir = path.join(rootDir, ".chocola");
+  let persistentCssMap = {};
+  try {
+    const hashData = await fs.readFile(path.join(chocolaDir, "hashes.json"), "utf-8");
+    persistentCssMap = JSON.parse(hashData);
+  } catch {}
+
   const appElements = getAppElements(appContainer);
-  const { runtimeScript, scopesCss } = processAllComponents(appElements, loadedComponents, pageSourcePath, srcIndexContent);
+  const { runtimeScript, scopesCss, usedComponents, cssScopesMap } = processAllComponents(appElements, loadedComponents, pageSourcePath, srcIndexContent, persistentCssMap);
   const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
   await processAssets(doc, rootDir, config.srcDir, paths.outDir);
 
@@ -227,6 +235,14 @@ export default async function compile(rootDir, buildConfig) {
   } catch (err) {
     throwError(err.message || err);
   }
+
+  const cleanedMap = {};
+  for (const compName of usedComponents) {
+    const hash = cssScopesMap.get(compName);
+    if (hash) cleanedMap[compName] = hash;
+  }
+  await fs.mkdir(chocolaDir, { recursive: true });
+  await fs.writeFile(path.join(chocolaDir, "hashes.json"), JSON.stringify(cleanedMap, null, 2) + "\n");
 
   !isHotReload && logSuccess(paths.outDir);
   isHotReload && console.log("Dev server updated");

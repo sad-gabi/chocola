@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { protectCurlyBraces } from "../utils.js";
-import { genRandomId, incrementAlfabet, throwError } from "./utils.js";
+import { genRandomId, incrementAlfabet, throwError, deterministicHash } from "./utils.js";
 import {
   extractPropsDefaults, extractRuntime, extractTopLevelFunctions,
   extractContextFromElement, hasDelIfAttr, getDelIfAttr, removeDelIfAttr,
@@ -32,7 +32,9 @@ export function processComponentElement(
   cx,
   renderChain = [],
   sourceFile,
-  sourceContent
+  sourceContent,
+  persistentCssMap = {},
+  usedComponents = null
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".html";
@@ -205,7 +207,9 @@ export function processComponentElement(
       cx,
       renderChain.concat(compName),
       compName,
-      template
+      template,
+      persistentCssMap,
+      usedComponents
     );
 
     applyConditionalToElement(child, ctxProxy, condChain, hasIf, hasDelIf, hasElif, hasElse);
@@ -286,9 +290,13 @@ export function processComponentElement(
   if (styles) {
     let cssId = cx.cssScopesMap && cx.cssScopesMap.get(compName);
     if (!cssId) {
-      cssId = genRandomId(cx.cssScopes, 8, true);
+      cssId = persistentCssMap[compName];
+      if (!cssId) {
+        cssId = deterministicHash(compName, 8);
+      }
       cx.cssScopesMap.set(compName, cssId);
     }
+    if (usedComponents) usedComponents.add(compName);
     if (fragment.children.length === 1 && firstChild.nodeType === 1) {
       firstChild.classList.add(cssId);
     }
@@ -296,28 +304,25 @@ export function processComponentElement(
     cx.scopedStyles.push(styles);
   }
 
-  if (fragment.children.length === 1 && firstChild.nodeType === 1) {
-    firstChild.setAttribute("chsrc", compName);
-  }
-
   element.replaceWith(fragment);
   return true;
 }
 
-export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent) {
+export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent, persistentCssMap = {}) {
+  const usedComponents = new Set();
   const cx = new ProcessContext(
     loadedComponents, [], [], { value: null }, new Map(), [], new Map(), [], new Map()
   );
 
   appElements.forEach(el => {
     if (!el.isConnected) return;
-    processComponentElement(el, cx, [], pageSourceFile, pageSourceContent);
+    processComponentElement(el, cx, [], pageSourceFile, pageSourceContent, persistentCssMap, usedComponents);
   });
   const runtimeScript = cx.runtimeChunks.join("\n");
   const hasComponents = cx.runtimeChunks.length > 0;
   const scopesCss = cx.scopedStyles.join("\n");
 
-  return { runtimeScript, hasComponents, scopesCss };
+  return { runtimeScript, hasComponents, scopesCss, usedComponents, cssScopesMap: cx.cssScopesMap };
 }
 
 function getNextLetter(letterState) {

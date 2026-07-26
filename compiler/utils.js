@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import chalk from "./chalk.js";
 
 export function throwError(err) {
@@ -37,6 +38,15 @@ export function incrementAlfabet(letters) {
   }
 
   return "a" + arr.join("");
+}
+
+export function deterministicHash(content, length = 8) {
+  const hash = createHash("sha256").update(content).digest();
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += String.fromCharCode(97 + (hash[i % hash.length] % 26));
+  }
+  return result;
 }
 
 const ID_LETTERS = "abcdefghijklmnopqrstuvwxyz";
