@@ -2,21 +2,21 @@
 
 ## 2.0.0-next.5 (Jul 26, 2026)
 
-- Top-level functions can now be declared outside `$runtime` [[#51](https://github.com/sad-gabi/chocola/issues/51)]
+- Top-level functions can now be declared outside `$runtime` [[#51](https://github.com/chocolajs/chocola/issues/51)]
   - They are scoped to the component and won't leak to other components
   - They are compiled into the component's context and can be interpolated in templates (e.g., `{format(value)}`)
 
-- Added `bind:*` attribute for DOM element manipulation [[#50](https://github.com/sad-gabi/chocola/issues/50)]
+- Added `bind:*` attribute for DOM element manipulation [[#50](https://github.com/chocolajs/chocola/issues/50)]
   - `bind:self="var"` assigns the element to a script variable
   - `bind:<property>="var"` captures an element property (e.g., `bind:type="t"`)
 
-- Removed `chalk` dependency — replaced with a minimal ANSI wrapper [[#49](https://github.com/sad-gabi/chocola/issues/48)]
-- Removed `js-beautify` dependency — CSS/HTML output is now raw [[#53](https://github.com/sad-gabi/chocola/issues/53)]
-- Codebase optimizations [[1edff39](https://github.com/sad-gabi/chocola/commit/1edff39d6bb7565da78f844d2096d60d7e527da7)]
+- Removed `chalk` dependency — replaced with a minimal ANSI wrapper [[#49](https://github.com/chocolajs/chocola/issues/48)]
+- Removed `js-beautify` dependency — CSS/HTML output is now raw [[#53](https://github.com/chocolajs/chocola/issues/53)]
+- Codebase optimizations [[1edff39](https://github.com/chocolajs/chocola/commit/1edff39d6bb7565da78f844d2096d60d7e527da7)]
 
 ## 2.0.0-next.4 (Jul 25, 2026)
 
-- Added Chocola SFCs [[#46](https://github.com/sad-gabi/chocola/issues/46)]
+- Added Chocola SFCs [[#46](https://github.com/chocolajs/chocola/issues/46)]
   - Now Chocola components are `.html` files with `<script>`, `<template>` (required), and `<styles>` tags
   - Props and their default values are now declared at the top level of `<script>` as `export let prop = defaultValue`; default values are still optional
   - `RUNTIME(self, ctx)` function replaced with `$runtime()`
@@ -28,25 +28,25 @@
 
 ## 2.0.0-next.3 (Jul 24, 2026)
 
-- Removed `del-if` support [[#32](https://github.com/sad-gabi/chocola/issues/32)]
-- Removed dynamic asset bundling support (`src`, `href`, `url()`) [[#39](https://github.com/sad-gabi/chocola/issues/39)]
+- Removed `del-if` support [[#32](https://github.com/chocolajs/chocola/issues/32)]
+- Removed dynamic asset bundling support (`src`, `href`, `url()`) [[#39](https://github.com/chocolajs/chocola/issues/39)]
 
 ## 2.0.0-next.2 (Jul 23, 2026)
 
 - Perfomance optimizations, including:
-  - Double-processing of DOM elements [[#35](https://github.com/sad-gabi/chocola/issues/35)]
-  - Repeated new `Function(...)` compilation [[#36](https://github.com/sad-gabi/chocola/issues/36)]
-  - `extractContextFromElement` recreates `Function` per attribute [[#37](https://github.com/sad-gabi/chocola/issues/37)]
-  - `validateChainStructure` line-number search is O(n²) [[#40](https://github.com/sad-gabi/chocola/issues/40)]
-  - `genRandomId` re-declares `letters` const on every call [[#41](https://github.com/sad-gabi/chocola/issues/41)]
-  - `incrementAlfabet` uses `indexOf` per character [[#43](https://github.com/sad-gabi/chocola/issues/43)]
-  - `interpolateNode` recursive without depth guard [[#44](https://github.com/sad-gabi/chocola/issues/44)]
-  - Dev server uses two separate `fs.watch` calls [[#42](https://github.com/sad-gabi/chocola/issues/42)]
-  - `app.build` ignores the returned promise [[#45](https://github.com/sad-gabi/chocola/issues/45)]
+  - Double-processing of DOM elements [[#35](https://github.com/chocolajs/chocola/issues/35)]
+  - Repeated new `Function(...)` compilation [[#36](https://github.com/chocolajs/chocola/issues/36)]
+  - `extractContextFromElement` recreates `Function` per attribute [[#37](https://github.com/chocolajs/chocola/issues/37)]
+  - `validateChainStructure` line-number search is O(n²) [[#40](https://github.com/chocolajs/chocola/issues/40)]
+  - `genRandomId` re-declares `letters` const on every call [[#41](https://github.com/chocolajs/chocola/issues/41)]
+  - `incrementAlfabet` uses `indexOf` per character [[#43](https://github.com/chocolajs/chocola/issues/43)]
+  - `interpolateNode` recursive without depth guard [[#44](https://github.com/chocolajs/chocola/issues/44)]
+  - Dev server uses two separate `fs.watch` calls [[#42](https://github.com/chocolajs/chocola/issues/42)]
+  - `app.build` ignores the returned promise [[#45](https://github.com/chocolajs/chocola/issues/45)]
 
 ## 2.0.0-next.1 (Jul 23, 2026)
 
-- Moved main Chocola imports [[#33](https://github.com/sad-gabi/chocola/issues/33)]:
+- Moved main Chocola imports [[#33](https://github.com/chocolajs/chocola/issues/33)]:
   - `{app}` to `chocola/compiler`
   - `{dev}` to `chocola/dev`
 - Added JSDocs for `{dev}`.
@@ -56,16 +56,16 @@
 ## 1.6.0 (Jul 23, 2026)
 
 ### Added features
-- Added `del:if` as a replacement for `del-if` and deprecated the last one [[#27]](https://github.com/sad-gabi/chocola/issues/27).
-- CSS animations scoping [[#30]](https://github.com/sad-gabi/chocola/issues/30).
+- Added `del:if` as a replacement for `del-if` and deprecated the last one [[#27]](https://github.com/chocolajs/chocola/issues/27).
+- CSS animations scoping [[#30]](https://github.com/chocolajs/chocola/issues/30).
 
 ### Fixed bugs
-- A bug that would turn `{foo}` at `index.html` into strings [[#25]](https://github.com/sad-gabi/chocola/issues/25).
-- A bug that would make the compiler skip evaluating all Chocola syntax that were not direct children of the `<app>` container [[#29]](https://github.com/sad-gabi/chocola/issues/29).
-- A bug that would treat CSS non-selector at-rules as common rules and breake them [[#26]](https://github.com/sad-gabi/chocola/issues/26)
+- A bug that would turn `{foo}` at `index.html` into strings [[#25]](https://github.com/chocolajs/chocola/issues/25).
+- A bug that would make the compiler skip evaluating all Chocola syntax that were not direct children of the `<app>` container [[#29]](https://github.com/chocolajs/chocola/issues/29).
+- A bug that would treat CSS non-selector at-rules as common rules and breake them [[#26]](https://github.com/chocolajs/chocola/issues/26)
 
 ### Optimization
-- Remove code for processing `.choco` files since they were never implemented and aren´t planned to be either [[#28]](https://github.com/sad-gabi/chocola/issues/28).
+- Remove code for processing `.choco` files since they were never implemented and aren´t planned to be either [[#28]](https://github.com/chocolajs/chocola/issues/28).
 
 ## 1.5.2 (Jul 20, 2026)
 

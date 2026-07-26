@@ -33,4 +33,4 @@ Chocola is a JavaScript library for creating web user interfaces.
 
 ## Documentation
 
-See https://github.com/sad-gabi/chocola/wiki
+See https://github.com/chocolajs/chocola/wiki/Overview

@@ -13,11 +13,11 @@
   ],
   "homepage": "https://chocolaframework.web.app/",
   "bugs": {
-    "url": "https://github.com/sad-gabi/chocola/issues"
+    "url": "https://github.com/chocolajs/chocola/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sad-gabi/chocola.git"
+    "url": "git+https://github.com/chocolajs/chocola.git"
   },
   "license": "MIT",
   "author": "SadGabi",
@@ -25,7 +25,7 @@
   "main": "index.js",
   "funding": {
     "type": "github",
-    "url": "https://github.com/sponsors/sad-gabi"
+    "url": "https://github.com/sponsors/chocolajs"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
