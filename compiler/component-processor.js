@@ -410,6 +410,15 @@ export function processComponentElement(
     });
   }
 
+  const topFuncSrc = extractTopLevelFunctions(script || "", RUNTIME_KW);
+  for (const src of topFuncSrc) {
+    try {
+      const fn = (0, eval)("(" + src + ")");
+      const name = fn.name;
+      if (name && !(name in ctx)) ctx[name] = fn;
+    } catch {}
+  }
+
   const elInnerHtml = element.innerHTML;
 
   const ctxProxy = new Proxy(ctx, {
@@ -583,7 +592,7 @@ export function processComponentElement(
         let letter;
         if (!letterEntry) {
           letter = getNextLetter(cx.letterState);
-          const topFuncs = extractTopLevelFunctions(script, RUNTIME_KW);
+          const topFuncs = topFuncSrc;
 
           let injectCode = ctxDef;
           if (bindings.length > 0) {
