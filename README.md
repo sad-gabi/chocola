@@ -3,7 +3,7 @@
 Chocola is a JavaScript library for creating web user interfaces.
 
 `chocola` only contains the functionality to build and serve web static builds. For production you may want to implement `chocola` to your workflow with other frameworks until official workflows are provided.
-a
+
 ## Usage
 
 ```html
