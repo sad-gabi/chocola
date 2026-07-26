@@ -202,6 +202,87 @@ class ProcessContext {
 
 const reservedAttrs = ["if", "del:if", "elif", "else"];
 
+function extractTopLevelFunctions(script, excludeName) {
+  const funcs = [];
+  let i = 0;
+  let depth = 0;
+  let inStr = false;
+  let strChar = null;
+
+  while (i < script.length) {
+    const ch = script[i];
+
+    if (inStr) {
+      if (ch === '\\') i++;
+      else if (ch === strChar) inStr = false;
+      i++;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'" || ch === '`') {
+      inStr = true;
+      strChar = ch;
+      i++;
+      continue;
+    }
+
+    if (ch === '{') { depth++; i++; continue; }
+    if (ch === '}') { depth--; i++; continue; }
+
+    if (depth === 0) {
+      const rest = script.slice(i);
+      const m = rest.match(/^(?:async\s+)?function\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*\(/);
+      if (m) {
+        const name = m[1];
+        const pastParen = i + m[0].length;
+
+        let parenDepth = 1;
+        let p = pastParen;
+        while (p < script.length && parenDepth > 0) {
+          if (script[p] === '(') parenDepth++;
+          if (script[p] === ')') parenDepth--;
+          p++;
+        }
+
+        while (p < script.length && script[p] !== '{') p++;
+        if (p >= script.length) { i++; continue; }
+
+        let bDepth = 1;
+        let bodyStr = false;
+        let bodyStrChar = null;
+        let end = p + 1;
+        while (end < script.length && bDepth > 0) {
+          const c = script[end];
+          if (bodyStr) {
+            if (c === '\\') end++;
+            else if (c === bodyStrChar) bodyStr = false;
+            end++;
+            continue;
+          }
+          if (c === '"' || c === "'" || c === '`') {
+            bodyStr = true;
+            bodyStrChar = c;
+            end++;
+            continue;
+          }
+          if (c === '{') bDepth++;
+          if (c === '}') bDepth--;
+          end++;
+        }
+
+        if (name !== excludeName) {
+          funcs.push(script.slice(i, end));
+        }
+        i = end;
+        continue;
+      }
+    }
+    i++;
+  }
+
+  return funcs;
+}
+
 function extractRuntime(script, compName) {
   const startRegex = /(?:async\s+)?function\s+\$runtime\(([^)]*)\)\s*\{/;
   const match = script.match(startRegex);
@@ -487,6 +568,10 @@ export function processComponentElement(
         let letter;
         if (!letterEntry) {
           letter = getNextLetter(cx.letterState);
+          const topFuncs = extractTopLevelFunctions(script, RUNTIME_KW);
+          if (topFuncs.length > 0) {
+            runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + topFuncs.join("\n\n") + "\n");
+          }
           runtime = runtime.replace(`${RUNTIME_KW}()`, `${letter}r(self, ctx)`);
           cx.runtimeChunks.push(runtime);
           cx.runtimeMap && cx.runtimeMap.set(compName, { letter });
