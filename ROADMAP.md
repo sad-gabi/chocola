@@ -30,17 +30,20 @@ The core compiler and the minimum needed to build a real page with it.
 Hardening V1, giving components a proper file format and adding dynamic rendering.
 Introducing the `$` prefix.
 
+### Available now
+- New SFC (Single-File Components) system with tags: `<head>`, `<script>`, `<template>`, `<style>`
+- New `$runtime` function replacing `RUNTIME`.
+- Scripts bundling
+- Scoped functions
+- `bind:` attribute for manipulating DOM elements.
+
 ### Breaking changes
 - Runtime component instancing
 - CSR SPA router
 - Declarative components imports
-- New SFC (Single-File Components) system with tags: `<head>`, `<script>`, `<template>`, `<style>`
-- New `$runtime` function replacing `RUNTIME`.
 
 ### New features
-- Scripts, ESM modules and dependencies bundling
-- `bind:` attribute for manipulating DOM elements.
-- Scoped functions
+- ESM modules and dependencies bundling
 - `for:each` and `switch/case` logic blocks
 - `<as:html></as:html>` blocks for raw HTML injection
 - `<const value="{foo}">` tag to define a local constant
