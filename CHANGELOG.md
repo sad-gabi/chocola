@@ -1,8 +1,22 @@
 # Chocola Changelog
 
+## 2.0.0-next.5 (Jul 26, 2026)
+
+- Top-level functions can now be declared outside `$runtime` [[#51](https://github.com/sad-gabi/chocola/issues/51)]
+  - They are scoped to the component and won't leak to other components
+  - They are compiled into the component's context and can be interpolated in templates (e.g., `{format(value)}`)
+
+- Added `bind:*` attribute for DOM element manipulation [[#50](https://github.com/sad-gabi/chocola/issues/50)]
+  - `bind:self="var"` assigns the element to a script variable
+  - `bind:<property>="var"` captures an element property (e.g., `bind:type="t"`)
+
+- Removed `chalk` dependency — replaced with a minimal ANSI wrapper [[#49](https://github.com/sad-gabi/chocola/issues/48)]
+- Removed `js-beautify` dependency — CSS/HTML output is now raw [[#53](https://github.com/sad-gabi/chocola/issues/53)]
+- Codebase optimizations [[1edff39](https://github.com/sad-gabi/chocola/commit/1edff39d6bb7565da78f844d2096d60d7e527da7)]
+
 ## 2.0.0-next.4 (Jul 25, 2026)
 
-- Added Chocola SFCs [#46]
+- Added Chocola SFCs [[#46](https://github.com/sad-gabi/chocola/issues/46)]
   - Now Chocola components are `.html` files with `<script>`, `<template>` (required), and `<styles>` tags
   - Props and their default values are now declared at the top level of `<script>` as `export let prop = defaultValue`; default values are still optional
   - `RUNTIME(self, ctx)` function replaced with `$runtime()`
@@ -14,8 +28,8 @@
 
 ## 2.0.0-next.3 (Jul 24, 2026)
 
-- Removed `del-if` support [#32]
-- Removed dynamic asset bundling support (`src`, `href`, `url()`) [#39]
+- Removed `del-if` support [[#32](https://github.com/sad-gabi/chocola/issues/32)]
+- Removed dynamic asset bundling support (`src`, `href`, `url()`) [[#39](https://github.com/sad-gabi/chocola/issues/39)]
 
 ## 2.0.0-next.2 (Jul 23, 2026)
 
