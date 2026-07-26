@@ -39,9 +39,7 @@ export function extractContextFromElement(element) {
 }
 
 export async function serializeDOM(dom) {
-  const beautify = (await import("js-beautify")).default;
-  const finalHtml = restoreCurlyBraces(dom.serialize());
-  return beautify.html(finalHtml, { indent_size: 2 });
+  return restoreCurlyBraces(dom.serialize());
 }
 
 export async function writeHTMLOutput(html, outDirPath) {

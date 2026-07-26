@@ -2,7 +2,6 @@ import { JSDOM } from "jsdom";
 import { extractContextFromElement } from "./dom-processor.js";
 import { genRandomId, incrementAlfabet, throwError, protectCurlyBraces, compileExpression, hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "./utils.js";
 import chalk from "./chalk.js";
-import beautify from "js-beautify";
 
 function hasCombinator(sel) {
   let depth = 0;
@@ -637,7 +636,7 @@ export function processAllComponents(appElements, loadedComponents, pageSourceFi
   });
   const runtimeScript = cx.runtimeChunks.join("\n");
   const hasComponents = cx.runtimeChunks.length > 0;
-  const scopesCss = beautify.css(cx.scopedStyles.join("\n"));
+  const scopesCss = cx.scopedStyles.join("\n");
 
   return { runtimeScript, hasComponents, scopesCss };
 }

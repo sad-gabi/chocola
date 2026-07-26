@@ -35,10 +35,6 @@
     "./dev": "./dev/index.js"
   },
   "dependencies": {
-    "js-beautify": "^1.15.4",
     "jsdom": "^27.4.0"
-  },
-  "devDependencies": {
-    "js-beautify": "^1.15.4"
   }
 }
