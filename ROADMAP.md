@@ -43,6 +43,7 @@ Introducing the `$` prefix.
 - Declarative components imports
 
 ### New features
+- HMR dev server
 - ESM modules and dependencies bundling
 - `for:each` and `switch/case` logic blocks
 - `<as:html></as:html>` blocks for raw HTML injection
