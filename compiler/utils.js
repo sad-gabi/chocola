@@ -1,11 +1,18 @@
-import fs from "fs/promises";
-import path from "path";
-import { pathToFileURL } from "url";
 import chalk from "chalk";
 
 export function throwError(err) {
   console.log(chalk.red.bold("Error!"), "A fatal error has occurred:\n");
   throw new Error(err);
+}
+
+export function hasDelIfAttr(el) {
+  return el.hasAttribute("del:if");
+}
+export function getDelIfAttr(el) {
+  return el.getAttribute("del:if");
+}
+export function removeDelIfAttr(el) {
+  el.removeAttribute("del:if");
 }
 
 export function genRandomId(collection = null, length = 10, lettersOnly = false) {
@@ -40,15 +47,6 @@ export function incrementAlfabet(letters) {
   }
 
   return "a" + arr.join("");
-}
-
-export function isWebLink(str) {
-  try {
-    const url = new URL(str);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch (e) {
-    return false;
-  }
 }
 
 const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";

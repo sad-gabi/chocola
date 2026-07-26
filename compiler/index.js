@@ -15,7 +15,7 @@ import {
 } from "./dom-processor.js";
 import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
-import { genRandomId, throwError, compileExpression } from "./utils.js";
+import { genRandomId, throwError, compileExpression, hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "./utils.js";
 import {
   copyStaticDir,
   getComponents,
@@ -112,6 +112,74 @@ async function processAssets(doc, rootDir, srcDir, outDirPath) {
   return cssContents
 }
 
+function processPageConditionals(parent) {
+  const children = [...parent.children];
+  let chainActive = false;
+  let chainRendered = false;
+
+  for (const child of children) {
+    const hasIf = child.hasAttribute("if");
+    const hasDelIf = hasDelIfAttr(child);
+    const hasElif = child.hasAttribute("elif");
+    const hasElse = child.hasAttribute("else");
+
+    if (hasElif || hasElse) {
+      if (!chainActive) continue;
+      if (chainRendered) { child.remove(); continue; }
+    }
+
+    if (hasIf) {
+      const raw = child.getAttribute("if");
+      const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
+      const fn = compileExpression(expr, false);
+      const result = fn();
+      chainActive = true;
+      if (result) {
+        chainRendered = true;
+      } else {
+        child.remove();
+        chainRendered = false;
+      }
+      child.removeAttribute("if");
+    } else if (hasDelIf) {
+      const raw = getDelIfAttr(child);
+      const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
+      const fn = compileExpression(expr, false);
+      const result = fn();
+      chainActive = true;
+      if (result) {
+        chainRendered = true;
+      } else {
+        child.remove();
+        chainRendered = false;
+      }
+      removeDelIfAttr(child);
+    } else if (hasElif) {
+      const raw = child.getAttribute("elif");
+      const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
+      const fn = compileExpression(expr, false);
+      const result = fn();
+      if (result) {
+        chainRendered = true;
+      } else {
+        child.remove();
+      }
+      child.removeAttribute("elif");
+    } else if (hasElse) {
+      chainRendered = true;
+      chainActive = false;
+      child.removeAttribute("else");
+    } else {
+      chainActive = false;
+      chainRendered = false;
+    }
+
+    if (child.parentNode) {
+      processPageConditionals(child);
+    }
+  }
+}
+
 export default async function compile(rootDir, buildConfig) {
   const isHotReload = buildConfig?.isHotReload || null;
   !isHotReload && logBanner();
@@ -136,83 +204,6 @@ export default async function compile(rootDir, buildConfig) {
   const doc = dom.window.document;
   const appContainer = validateAppContainer(doc);
 
-  function hasDelIfAttr(el) {
-    return el.hasAttribute("del:if");
-  }
-  function getDelIfAttr(el) {
-    return el.getAttribute("del:if");
-  }
-  function removeDelIfAttr(el) {
-    el.removeAttribute("del:if");
-  }
-
-  function processPageConditionals(parent) {
-    const children = [...parent.children];
-    let chainActive = false;
-    let chainRendered = false;
-
-    for (const child of children) {
-      const hasIf = child.hasAttribute("if");
-      const hasDelIf = hasDelIfAttr(child);
-      const hasElif = child.hasAttribute("elif");
-      const hasElse = child.hasAttribute("else");
-
-      if (hasElif || hasElse) {
-        if (!chainActive) continue;
-        if (chainRendered) { child.remove(); continue; }
-      }
-
-      if (hasIf) {
-        const raw = child.getAttribute("if");
-        const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-        const fn = compileExpression(expr, false);
-        const result = fn();
-        chainActive = true;
-        if (result) {
-          chainRendered = true;
-        } else {
-          child.remove();
-          chainRendered = false;
-        }
-        child.removeAttribute("if");
-      } else if (hasDelIf) {
-        const raw = getDelIfAttr(child);
-        const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-        const fn = compileExpression(expr, false);
-        const result = fn();
-        chainActive = true;
-        if (result) {
-          chainRendered = true;
-        } else {
-          child.remove();
-          chainRendered = false;
-        }
-        removeDelIfAttr(child);
-      } else if (hasElif) {
-        const raw = child.getAttribute("elif");
-        const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-        const fn = compileExpression(expr, false);
-        const result = fn();
-        if (result) {
-          chainRendered = true;
-        } else {
-          child.remove();
-        }
-        child.removeAttribute("elif");
-      } else if (hasElse) {
-        chainRendered = true;
-        chainActive = false;
-        child.removeAttribute("else");
-      } else {
-        chainActive = false;
-        chainRendered = false;
-      }
-
-      if (child.parentNode) {
-        processPageConditionals(child);
-      }
-    }
-  }
   processPageConditionals(appContainer);
 
   const appElements = getAppElements(appContainer);

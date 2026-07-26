@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { extractContextFromElement } from "./dom-processor.js";
-import { genRandomId, incrementAlfabet, throwError, protectCurlyBraces, compileExpression } from "./utils.js";
+import { genRandomId, incrementAlfabet, throwError, protectCurlyBraces, compileExpression, hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "./utils.js";
 import chalk from "chalk";
 import beautify from "js-beautify";
 
@@ -101,16 +101,6 @@ function scopeCss(cssString, cssId) {
   return processBlock(cssString);
 }
 
-function hasDelIfAttr(el) {
-  return el.hasAttribute("del:if");
-}
-function getDelIfAttr(el) {
-  return el.getAttribute("del:if");
-}
-function removeDelIfAttr(el) {
-  el.removeAttribute("del:if");
-}
-
 function extractPropsDefaults(script) {
   if (!script) return [];
   const propsRegex = /export\s+let\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*(?:=\s*([^;]+))?;/g;
@@ -196,24 +186,112 @@ function validateChainStructure(parent, sourceFile, sourceContent, parentContent
   }
 }
 
+class ProcessContext {
+  constructor(loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, staticCtxRegistry) {
+    this.loadedComponents = loadedComponents;
+    this.runtimeChunks = runtimeChunks;
+    this.compIdColl = compIdColl;
+    this.letterState = letterState;
+    this.runtimeMap = runtimeMap;
+    this.cssScopes = cssScopes;
+    this.cssScopesMap = cssScopesMap;
+    this.scopedStyles = scopedStyles;
+    this.staticCtxRegistry = staticCtxRegistry;
+  }
+}
+
+const reservedAttrs = ["if", "del:if", "elif", "else"];
+
+function extractRuntime(script, compName) {
+  const startRegex = /(?:async\s+)?function\s+\$runtime\(([^)]*)\)\s*\{/;
+  const match = script.match(startRegex);
+  if (!match) return null;
+
+  const startIndexBrace = match.index + match[0].length - 1;
+  let bracesCount = 0;
+  let inString = false;
+  let stringChar = null;
+
+  for (let i = startIndexBrace; i < script.length; i++) {
+    const ch = script[i];
+
+    if (inString) {
+      if (ch === '\\') { i++; continue; }
+      if (ch === stringChar) inString = false;
+      continue;
+    }
+
+    if (ch === "'" || ch === '"' || ch === '`') {
+      inString = true;
+      stringChar = ch;
+      continue;
+    }
+
+    if (ch === '{') {
+      bracesCount++;
+    } else if (ch === '}') {
+      bracesCount--;
+      if (bracesCount === 0) {
+        return script.substring(match.index, i + 1);
+      }
+    }
+  }
+
+  throw new Error(`${compName} $runtime function has unclosed curly braces.`);
+}
+
+function applyConditionalToElement(child, ctxProxy, condChain, hasIf, hasDelIf, hasElif, hasElse) {
+  if (hasIf) {
+    const expr = child.getAttribute("if").slice(1, -1);
+    const fn = compileExpression(expr, true);
+    condChain.active = true;
+    if (fn(ctxProxy)) {
+      condChain.rendered = true;
+    } else {
+      child.style.display = "none";
+      condChain.rendered = false;
+    }
+    child.removeAttribute("if");
+  } else if (hasDelIf) {
+    const expr = getDelIfAttr(child).slice(1, -1);
+    const fn = compileExpression(expr, true);
+    condChain.active = true;
+    if (fn(ctxProxy)) {
+      condChain.rendered = true;
+    } else {
+      child.remove();
+      condChain.rendered = false;
+    }
+    removeDelIfAttr(child);
+  } else if (hasElif) {
+    const expr = child.getAttribute("elif").slice(1, -1);
+    const fn = compileExpression(expr, true);
+    if (fn(ctxProxy)) {
+      condChain.rendered = true;
+    } else {
+      child.remove();
+    }
+    child.removeAttribute("elif");
+  } else if (hasElse) {
+    condChain.rendered = true;
+    condChain.active = false;
+    child.removeAttribute("else");
+  } else {
+    condChain.active = false;
+    condChain.rendered = false;
+  }
+}
+
 export function processComponentElement(
   element,
-  loadedComponents,
-  runtimeChunks,
-  compIdColl,
-  letterState,
-  runtimeMap,
-  cssScopes,
-  cssScopesMap,
-  scopedStyles,
+  cx,
   renderChain = [],
-  staticCtxRegistry,
   sourceFile,
   sourceContent
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".html";
-  let instance = loadedComponents.get(compName);
+  let instance = cx.loadedComponents.get(compName);
 
   if (!instance || instance === undefined) return false;
   if (renderChain && renderChain.includes(compName)) return false;
@@ -233,11 +311,11 @@ export function processComponentElement(
   const compProps = extractPropsDefaults(script);
 
   let ctx;
-  if (staticCtxRegistry && staticCtxRegistry.has(element)) {
-    ctx = staticCtxRegistry.get(element);
+  if (cx.staticCtxRegistry && cx.staticCtxRegistry.has(element)) {
+    ctx = cx.staticCtxRegistry.get(element);
   } else {
     ctx = extractContextFromElement(element);
-    staticCtxRegistry && staticCtxRegistry.set(element, ctx);
+    cx.staticCtxRegistry && cx.staticCtxRegistry.set(element, ctx);
   }
 
   if (compProps.length > 0) {
@@ -335,8 +413,6 @@ export function processComponentElement(
       return;
     }
 
-    const reservedAttrs = ["if", "del:if", "elif", "else"];
-
     Array.from(child.attributes).forEach(attribute => {
       if (!attribute || attribute === undefined) return;
       if (reservedAttrs.includes(attribute.name)) return;
@@ -354,59 +430,13 @@ export function processComponentElement(
 
     processComponentElement(
       child,
-      loadedComponents,
-      runtimeChunks,
-      compIdColl,
-      letterState,
-      runtimeMap,
-      cssScopes,
-      cssScopesMap,
-      scopedStyles,
+      cx,
       renderChain.concat(compName),
-      staticCtxRegistry,
       compName,
       template
     );
 
-    if (hasIf) {
-      const expr = child.getAttribute("if").slice(1, -1);
-      const fn = compileExpression(expr, true);
-      condChain.active = true;
-      if (fn(ctxProxy)) {
-        condChain.rendered = true;
-      } else {
-        child.style.display = "none";
-        condChain.rendered = false;
-      }
-      child.removeAttribute("if");
-    } else if (hasDelIf) {
-      const expr = getDelIfAttr(child).slice(1, -1);
-      const fn = compileExpression(expr, true);
-      condChain.active = true;
-      if (fn(ctxProxy)) {
-        condChain.rendered = true;
-      } else {
-        child.remove();
-        condChain.rendered = false;
-      }
-      removeDelIfAttr(child);
-    } else if (hasElif) {
-      const expr = child.getAttribute("elif").slice(1, -1);
-      const fn = compileExpression(expr, true);
-      if (fn(ctxProxy)) {
-        condChain.rendered = true;
-      } else {
-        child.remove();
-      }
-      child.removeAttribute("elif");
-    } else if (hasElse) {
-      condChain.rendered = true;
-      condChain.active = false;
-      child.removeAttribute("else");
-    } else {
-      condChain.active = false;
-      condChain.rendered = false;
-    }
+    applyConditionalToElement(child, ctxProxy, condChain, hasIf, hasDelIf, hasElif, hasElse);
 
     interpolateNode(child, ctxProxy)
   });
@@ -415,7 +445,7 @@ export function processComponentElement(
 
   if (firstChild && firstChild.nodeType === 1) {
     if (script) {
-      const compId = "chid-" + genRandomId(compIdColl);
+      const compId = "chid-" + genRandomId(cx.compIdColl);
       firstChild.setAttribute("chid", compId);
 
       const ctxRegex = /ctx\s*=\s*({.*?})/;
@@ -428,88 +458,58 @@ export function processComponentElement(
           runtimeCtx = {};
         }
       }
-      let ctxDef = "";
+      const ctxDefParts = [];
       const declared = new Set();
       for (const [key, value] of Object.entries(runtimeCtx)) {
-        ctxDef += `let ${key} = ctx.${key}||${JSON.stringify(value)};\n`;
+        ctxDefParts.push(`let ${key} = ctx.${key}||${JSON.stringify(value)};\n`);
         declared.add(key);
       }
 
       for (const { name, defaultValue } of compProps) {
         if (declared.has(name)) continue;
         if (defaultValue !== undefined) {
-          ctxDef += `let ${name} = ctx.${name}||${defaultValue};\n`;
+          ctxDefParts.push(`let ${name} = ctx.${name}||${defaultValue};\n`);
         } else {
-          ctxDef += `let ${name} = ctx.${name};\n`;
+          ctxDefParts.push(`let ${name} = ctx.${name};\n`);
         }
       }
+
+      const ctxDef = ctxDefParts.join("");
 
       script = script.replace(ctxRegex, "ctx");
 
-      function extractRuntime(script) {
-        const startRegex = /(?:async\s+)?function\s+\$runtime\(([^)]*)\)\s*\{/;
-        const match = script.match(startRegex);
-
-        if (!match) return null;
-
-        const startIndexBrace = match.index + match[0].length - 1;
-
-        let bracesCount = 0;
-        let closingBraceIndex = -1;
-
-        for (let i = startIndexBrace; i < script.length; i++) {
-          if (script[i] === "{") {
-            bracesCount++;
-          } else if (script[i] === "}") {
-            bracesCount--;
-            if (bracesCount === 0) {
-              closingBraceIndex = i;
-              break;
-            }
-          }
-        }
-
-        if (closingBraceIndex === -1) {
-          throw new Error(`${compName} $runtime function has unclosed curly braces.`);
-        }
-
-        const fullMatch = script.substring(match.index, closingBraceIndex + 1);
-
-        return fullMatch;
-      }
-
-      let runtime = extractRuntime(script);
+      let runtime = extractRuntime(script, compName);
 
       if (runtime) {
         runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + ctxDef);
 
-        let letterEntry = runtimeMap && runtimeMap.get(compName);
+        let letterEntry = cx.runtimeMap && cx.runtimeMap.get(compName);
         let letter;
         if (!letterEntry) {
-          letter = getNextLetter(letterState);
+          letter = getNextLetter(cx.letterState);
           runtime = runtime.replace(`${RUNTIME_KW}()`, `${letter}r(self, ctx)`);
-          runtimeChunks.push(runtime);
-          runtimeMap && runtimeMap.set(compName, { letter });
+          cx.runtimeChunks.push(runtime);
+          cx.runtimeMap && cx.runtimeMap.set(compName, { letter });
         } else {
           letter = letterEntry.letter;
         }
 
-        runtimeChunks.push(`${letter}r(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
+        cx.runtimeChunks.push(`${letter}r(document.querySelector('[chid="${compId}"]'), ${JSON.stringify(ctx)});`);
       }
     }
   }
 
   if (styles) {
-    let cssId = cssScopesMap && cssScopesMap.get(compName);
+    let cssId = cx.cssScopesMap && cx.cssScopesMap.get(compName);
     if (!cssId) {
-      cssId = genRandomId(cssScopes, 8, true);
-      cssScopesMap.set(compName, cssId);
+      cssId = genRandomId(cx.cssScopes, 8, true);
+      cx.cssScopesMap.set(compName, cssId);
     }
     if (fragment.children.length === 1 && firstChild.nodeType === 1) {
       firstChild.classList.add(cssId);
     }
     styles = scopeCss(styles, cssId);
-    scopedStyles.push(styles);
+    cx.scopedStyles.push(styles);
   }
 
   if (fragment.children.length === 1 && firstChild.nodeType === 1) {
@@ -521,22 +521,17 @@ export function processComponentElement(
 }
 
 export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent) {
-  let runtimeChunks = [];
-  let compIdColl = [];
-  let letterState = { value: null };
-  let runtimeMap = new Map();
-  let cssScopes = [];
-  let cssScopesMap = new Map();
-  let scopedStyles = [];
-  let staticCtxRegistry = new Map();
+  const cx = new ProcessContext(
+    loadedComponents, [], [], { value: null }, new Map(), [], new Map(), [], new Map()
+  );
 
   appElements.forEach(el => {
     if (!el.isConnected) return;
-    processComponentElement(el, loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, [], staticCtxRegistry, pageSourceFile, pageSourceContent);
+    processComponentElement(el, cx, [], pageSourceFile, pageSourceContent);
   });
-  const runtimeScript = runtimeChunks.join("\n");
-  const hasComponents = runtimeChunks.length > 0;
-  const scopesCss = beautify.css(scopedStyles.join("\n"));
+  const runtimeScript = cx.runtimeChunks.join("\n");
+  const hasComponents = cx.runtimeChunks.length > 0;
+  const scopesCss = beautify.css(cx.scopedStyles.join("\n"));
 
   return { runtimeScript, hasComponents, scopesCss };
 }
@@ -551,4 +546,3 @@ function getNextLetter(letterState) {
 }
 
 const RUNTIME_KW = "$runtime";
-const RUNTIME_REGEX = new RegExp(RUNTIME_KW, "g");

@@ -15,22 +15,23 @@ export async function getComponents(libDir) {
       throw Error(`The specified components folder ${libDir} could not be found.`);
     }
 
-    for (const comp of components) {
-      if (!comp.endsWith(".html")) continue;
+    const reads = components
+      .filter(comp => comp.endsWith(".html"))
+      .map(async (comp) => {
+        try {
+          const compPath = path.join(libDir, comp);
+          const instance = await fs.readFile(compPath, "utf-8");
 
-      componentsLib.push(comp);
+          if (instance === "" || instance.trim().length === 0) emptyComps.push(comp);
 
-      try {
-        const compPath = path.join(libDir, comp);
-        const instance = await fs.readFile(compPath, "utf-8");
+          loadedComponents.set(comp.toLowerCase(), instance);
+          componentsLib.push(comp);
+        } catch (err) {
+          throwError(`Failed to load component "${comp}": ${err.message || err}`);
+        }
+      });
 
-        if (instance === "" || instance.trim().length === 0) emptyComps.push(comp);
-
-        loadedComponents.set(comp.toLowerCase(), instance);
-      } catch (err) {
-        throwError(`Failed to load component "${comp}": ${err.message || err}`);
-      }
-    }
+    await Promise.all(reads);
 
     return { componentsLib, loadedComponents, emptyComps };
   } catch (err) {
