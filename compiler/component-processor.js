@@ -32,9 +32,7 @@ export function processComponentElement(
   cx,
   renderChain = [],
   sourceFile,
-  sourceContent,
-  persistentCssMap = {},
-  usedComponents = null
+  sourceContent
 ) {
   const tagName = element.tagName.toLowerCase();
   const compName = tagName + ".html";
@@ -207,9 +205,7 @@ export function processComponentElement(
       cx,
       renderChain.concat(compName),
       compName,
-      template,
-      persistentCssMap,
-      usedComponents
+      template
     );
 
     applyConditionalToElement(child, ctxProxy, condChain, hasIf, hasDelIf, hasElif, hasElse);
@@ -287,19 +283,15 @@ export function processComponentElement(
     }
   }
 
+  let cssId = cx.cssScopesMap && cx.cssScopesMap.get(compName);
+  if (!cssId) {
+    cssId = deterministicHash(compName, 8);
+    cx.cssScopesMap.set(compName, cssId);
+  }
+  if (fragment.children.length === 1 && firstChild.nodeType === 1) {
+    firstChild.classList.add(cssId);
+  }
   if (styles) {
-    let cssId = cx.cssScopesMap && cx.cssScopesMap.get(compName);
-    if (!cssId) {
-      cssId = persistentCssMap[compName];
-      if (!cssId) {
-        cssId = deterministicHash(compName, 8);
-      }
-      cx.cssScopesMap.set(compName, cssId);
-    }
-    if (usedComponents) usedComponents.add(compName);
-    if (fragment.children.length === 1 && firstChild.nodeType === 1) {
-      firstChild.classList.add(cssId);
-    }
     styles = scopeCss(styles, cssId);
     cx.scopedStyles.push(styles);
   }
@@ -308,21 +300,25 @@ export function processComponentElement(
   return true;
 }
 
-export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent, persistentCssMap = {}) {
-  const usedComponents = new Set();
+export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent) {
   const cx = new ProcessContext(
     loadedComponents, [], [], { value: null }, new Map(), [], new Map(), [], new Map()
   );
 
   appElements.forEach(el => {
     if (!el.isConnected) return;
-    processComponentElement(el, cx, [], pageSourceFile, pageSourceContent, persistentCssMap, usedComponents);
+    processComponentElement(el, cx, [], pageSourceFile, pageSourceContent);
   });
   const runtimeScript = cx.runtimeChunks.join("\n");
   const hasComponents = cx.runtimeChunks.length > 0;
   const scopesCss = cx.scopedStyles.join("\n");
 
-  return { runtimeScript, hasComponents, scopesCss, usedComponents, cssScopesMap: cx.cssScopesMap };
+  const hashMap = {};
+  for (const [compName, hash] of cx.cssScopesMap) {
+    hashMap[compName] = hash;
+  }
+
+  return { runtimeScript, hasComponents, scopesCss, hashMap };
 }
 
 function getNextLetter(letterState) {
