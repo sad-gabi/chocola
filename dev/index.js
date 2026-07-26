@@ -1,7 +1,7 @@
 import http from "http";
 import fs from "fs";
 import path from "path";
-import chalk from "chalk";
+import chalk from "../compiler/chalk.js";
 import compile from "../compiler/index.js";
 import { loadConfig, resolvePaths } from "../compiler/config.js";
 import { getChocolaConfig } from "../utils.js";

@@ -1,4 +1,4 @@
-import chalk from "chalk";
+import chalk from "./chalk.js";
 
 export function throwError(err) {
   console.log(chalk.red.bold("Error!"), "A fatal error has occurred:\n");

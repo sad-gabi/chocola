@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import { extractContextFromElement } from "./dom-processor.js";
 import { genRandomId, incrementAlfabet, throwError, protectCurlyBraces, compileExpression, hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "./utils.js";
-import chalk from "chalk";
+import chalk from "./chalk.js";
 import beautify from "js-beautify";
 
 function hasCombinator(sel) {

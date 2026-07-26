@@ -1,5 +1,5 @@
 import { promises as fs } from "fs";
-import chalk from "chalk";
+import chalk from "./chalk.js";
 import { loadConfig, resolvePaths } from "./config.js";
 import {
   createDOM,
