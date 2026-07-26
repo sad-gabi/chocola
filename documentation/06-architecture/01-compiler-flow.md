@@ -69,7 +69,7 @@ For each element inside `<app>`:
    - `<void else>` — chain-aware fallback
    - `<void>` — always renders children unwrapped (fragment-like)
 9. **Runtime ID** — if the component has `script` or `effects`, assigns a unique `chid` attribute
-10. **CSS Scoping** — if the component has `styles`, generates a scoped CSS class and rewrites selectors:
+10. **CSS Scoping** — every component gets a deterministic hash class on its root element derived from the component filename. If the component has `<style>`, the selectors are rewritten under that class:
     - Simple selectors (`.foo`) generate both AND-scoped (`.cssId.foo`) and descendant-scoped (`.cssId .foo`) variants
     - Selectors with combinators use descendant scoping only
     - `:root` and `:root.class` scope to the root element only
@@ -93,6 +93,7 @@ Wraps all runtime chunks in `DOMContentLoaded` and writes to `run-<random>.js`.
 - Serializes and beautifies the final HTML
 - Writes `index.html` to output directory
 - Writes generated CSS and JS files alongside it
+- Writes component hash map to `.chocola/hashes.json` for debugging reference
 
 ## Data Flow Diagram
 
@@ -102,14 +103,16 @@ compiler/index.js
   ├─ pipeline.js        → getComponents, getSrcIndex, processStylesheet, processIcons, copyStaticDir
   ├─ dom-processor.js   → createDOM, validateAppContainer, getAppElements, serializeDOM, writeHTMLOutput, appendRuntimeScript
   ├─ component-processor.js → validateChainStructure, processAllComponents, processComponentElement, scopeCss
-  └─ runtime-generator.js → generateRuntimeScript
+  ├─ runtime-generator.js → generateRuntimeScript
+  └─ .chocola/hashes.json → component-to-hash reference map (written after build)
 ```
 
 ## Key Concepts
 
 - **Components**: Single-file `.html` components with `<template>`, `<script>`, and `<style>` sections
 - **File-based loading**: `.html` component files are loaded as raw strings and parsed by the compiler
-- **CSS Scoping**: Component styles are scoped by rewriting selectors under a unique CSS class ID. Both root and descendant matching via dual selectors (AND + descendant).
+- **CSS Scoping**: Component styles are scoped by rewriting selectors under a deterministic hash class derived from the component filename. The hash class is always present on every component's root element, even without styles, serving as a stable component identifier. Both root and descendant matching via dual selectors (AND + descendant).
+- **Hash reference map**: `.chocola/hashes.json` is written after each build, mapping component filenames to their hash classes for debugging. It is auto-generated and should be gitignored.
 - **Runtime scripts**: Components with dynamic behavior get a unique ID and a runtime call that re-attaches event listeners/effects on page load
 - **Conditional chains**: `if`/`del:if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with file location (line included when the error is within the same source file)
 - **Void elements**: `<void>` acts as a transparent wrapper that never renders itself; useful for conditional rendering without extra DOM nodes

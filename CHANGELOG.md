@@ -1,5 +1,13 @@
 # Chocola Changelog
 
+## 2.0.0-next.6 (Jul 26, 2026)
+
+- Removed `chsrc` attribute [[#57](https://github.com/chocolajs/chocola/issues/57)]
+- CSS scope hashes are now deterministic, derived from the component's filename (e.g. `button.html`), so the same component always gets the same CSS scope class across independent builds [[#58](https://github.com/chocolajs/chocola/issues/58)]
+  - The hash class is always present on every component's root element, even without styles, serving as a stable component identifier for debugging
+  - A reference map is written to `.chocola/hashes.json` after each build so devs can look up which hash belongs to which component
+  - For its deterministic nature, `.chocola/` can be ignored in version control.
+
 ## 2.0.0-next.5 (Jul 26, 2026)
 
 - Top-level functions can now be declared outside `$runtime` [[#51](https://github.com/chocolajs/chocola/issues/51)]

@@ -36,6 +36,7 @@ Introducing the `$` prefix.
 - Scripts bundling
 - Scoped functions
 - `bind:` attribute for manipulating DOM elements.
+- Deterministic CSS scope hashes with a reference map written to `.chocola/hashes.json`.
 
 ### Breaking changes
 - Runtime component instancing

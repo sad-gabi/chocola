@@ -3,7 +3,7 @@ title: Scoped styles
 description: Encapsulated styles for your components
 ---
 
-Chocola components support scoped styles — CSS included in a component only affects elements inside that component. Chocola adds a unique hash/class to each component's elements so the styles don't leak outside.
+Chocola components support scoped styles — CSS included in a component only affects elements inside that component. Chocola adds a unique hash class to the component's root element so the styles don't leak outside.
 
 ### Usage
 
@@ -39,3 +39,18 @@ To apply styles to your root element, use `:root` as a placeholder selector:
 ```
 
 > Scoped styles automatically take priority over global styles inside the component.
+
+### Component identification
+
+Every component's root element receives a deterministic hash class derived from the component's filename (e.g. `button.html` produces a stable class like `xqkfybnh`). This class is always present, even on components without styles, and can be used to identify which component rendered a given element when inspecting the output or reporting errors.
+
+The mapping of component filenames to their hash classes is written to `.chocola/hashes.json` after each build for reference:
+
+```json
+{
+  "button.html": "xqkfybnh",
+  "card.html": "mptzrwxj"
+}
+```
+
+This file is auto-generated and should be ignored by version control.
