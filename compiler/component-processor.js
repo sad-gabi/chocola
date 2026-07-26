@@ -434,6 +434,8 @@ export function processComponentElement(
     parent: el.parentNode
   }));
   const condChains = new Map();
+  const bindings = [];
+  let bindCounter = 0;
 
   childEntries.forEach(({ el: child, parent }) => {
     if (!condChains.has(parent)) {
@@ -497,6 +499,17 @@ export function processComponentElement(
     Array.from(child.attributes).forEach(attribute => {
       if (!attribute || attribute === undefined) return;
       if (reservedAttrs.includes(attribute.name)) return;
+
+      if (attribute.name.startsWith("bind:")) {
+        const prop = attribute.name.slice(5);
+        const varName = attribute.value;
+        const bindId = "b" + (bindCounter++);
+        child.setAttribute("data-chbind", bindId);
+        bindings.push({ prop, varName, bindId });
+        child.removeAttribute(attribute.name);
+        return;
+      }
+
       attribute.value = attribute.value.replace(
         /\{([^}]+)\}/g,
         (_, expr) => {
@@ -562,16 +575,24 @@ export function processComponentElement(
       let runtime = extractRuntime(script, compName);
 
       if (runtime) {
-        runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + ctxDef);
-
         let letterEntry = cx.runtimeMap && cx.runtimeMap.get(compName);
         let letter;
         if (!letterEntry) {
           letter = getNextLetter(cx.letterState);
           const topFuncs = extractTopLevelFunctions(script, RUNTIME_KW);
-          if (topFuncs.length > 0) {
-            runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + topFuncs.join("\n\n") + "\n");
+
+          let injectCode = ctxDef;
+          if (bindings.length > 0) {
+            injectCode += "\n" + bindings.map(b => {
+              const accessor = b.prop === "self" ? "" : "." + b.prop;
+              return "let " + b.varName + " = self.querySelector('[data-chbind=\"" + b.bindId + "\"]')" + accessor + ";";
+            }).join("\n") + "\n";
           }
+          if (topFuncs.length > 0) {
+            injectCode += "\n" + topFuncs.join("\n\n") + "\n";
+          }
+          runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + injectCode);
+
           runtime = runtime.replace(`${RUNTIME_KW}()`, `${letter}r(self, ctx)`);
           cx.runtimeChunks.push(runtime);
           cx.runtimeMap && cx.runtimeMap.set(compName, { letter });
