@@ -47,6 +47,27 @@ The runtime function receives access to component data and DOM elements through 
 </template>
 ```
 
+## Top-Level Functions
+
+You can declare helper functions at the top level of `<script>` and call them from inside `$runtime`. They are scoped to the component's runtime function and won't leak to other components.
+
+```html
+<script>
+    let self = new HTMLDivElement;
+
+    function format(n) {
+        return n.toFixed(2);
+    }
+
+    function $runtime() {
+        const el = self.querySelector(".price");
+        if (el) el.textContent = format(ctx.price);
+    }
+</script>
+```
+
+This keeps your runtime logic clean by extracting reusable logic into named functions.
+
 ## Best Practices
 
 - Always manipulate elements inside `self` to prevent conflicts when multiple instances of a component are rendered.

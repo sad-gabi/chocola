@@ -38,7 +38,7 @@ Only `<template>` is required — `<script>` and `<style>` are optional.
 
 ## `<template>` — HTML Markup
 
-The template contains the component's HTML. It supports bindings via `{expr}`, conditionals (`if`, `del:if`, `elif`, `else`), `<slot>` for content projection, and `<void>` as a transparent wrapper.
+The template contains the component's HTML. It supports bindings via `{expr}`, conditionals (`if`, `del:if`, `elif`, `else`), `<slot>` for content projection, `<void>` as a transparent wrapper, and `bind:*` for DOM element references.
 
 ```html
 <template>
@@ -107,6 +107,8 @@ function $runtime() {
 ```
 
 `$runtime` runs once after the component is rendered. It receives `self` (the root element) and `ctx` (props and state) as injected parameters — you don't declare them in the signature.
+
+You can also declare helper functions at the top level of `<script>` and call them from `$runtime`. They are scoped to the component and won't leak.
 
 ```html
 <script>
