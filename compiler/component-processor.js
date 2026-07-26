@@ -429,13 +429,18 @@ export function processComponentElement(
         }
       }
       let ctxDef = "";
+      const declared = new Set();
       for (const [key, value] of Object.entries(runtimeCtx)) {
-        ctxDef += `ctx.${key} = ctx.${key}||${JSON.stringify(value)};\n`;
+        ctxDef += `let ${key} = ctx.${key}||${JSON.stringify(value)};\n`;
+        declared.add(key);
       }
 
       for (const { name, defaultValue } of compProps) {
+        if (declared.has(name)) continue;
         if (defaultValue !== undefined) {
-          ctxDef += `ctx.${name} = ctx.${name}||${defaultValue};\n`;
+          ctxDef += `let ${name} = ctx.${name}||${defaultValue};\n`;
+        } else {
+          ctxDef += `let ${name} = ctx.${name};\n`;
         }
       }
 
@@ -476,10 +481,6 @@ export function processComponentElement(
       let runtime = extractRuntime(script);
 
       if (runtime) {
-        for (const { name } of compProps) {
-          runtime = runtime.replace(name, `ctx.${name}`);
-        }
-
         runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + ctxDef);
 
         let letterEntry = runtimeMap && runtimeMap.get(compName);
