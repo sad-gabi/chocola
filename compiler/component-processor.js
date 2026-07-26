@@ -1,3 +1,4 @@
+import path from "path";
 import { JSDOM } from "jsdom";
 import { protectCurlyBraces } from "../utils.js";
 import { genRandomId, incrementAlfabet, throwError, deterministicHash } from "./utils.js";
@@ -12,7 +13,7 @@ import chalk from "./chalk.js";
 
 
 class ProcessContext {
-  constructor(loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, staticCtxRegistry) {
+  constructor(loadedComponents, runtimeChunks, compIdColl, letterState, runtimeMap, cssScopes, cssScopesMap, scopedStyles, staticCtxRegistry, csrClasses) {
     this.loadedComponents = loadedComponents;
     this.runtimeChunks = runtimeChunks;
     this.compIdColl = compIdColl;
@@ -22,7 +23,99 @@ class ProcessContext {
     this.cssScopesMap = cssScopesMap;
     this.scopedStyles = scopedStyles;
     this.staticCtxRegistry = staticCtxRegistry;
+    this.csrClasses = csrClasses;
   }
+}
+
+function escapeForTemplateLiteral(str) {
+  return str.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\${/g, "\\${");
+}
+
+function generateCSRClass(compName, cx, explicitClassName) {
+  if (cx.csrClasses.has(compName)) return;
+
+  let instance = cx.loadedComponents.get(compName);
+  if (!instance) return;
+
+  instance = protectCurlyBraces(instance);
+  const dom = new JSDOM(instance);
+  const doc = dom.window.document;
+  const script = doc.querySelector("script")?.innerHTML;
+  const template = doc.querySelector("template")?.innerHTML;
+  const styles = doc.querySelector("style")?.innerHTML;
+
+  if (!template) return;
+
+  const compProps = extractPropsDefaults(script);
+  const topFuncSrc = extractTopLevelFunctions(script || "", RUNTIME_KW);
+  let runtime = extractRuntime(script || "", compName);
+
+  if (!cx.cssScopesMap.has(compName)) {
+    cx.cssScopesMap.set(compName, deterministicHash(compName, 8));
+  }
+  const cssId = cx.cssScopesMap.get(compName);
+
+  if (styles) {
+    cx.scopedStyles.push(scopeCss(styles, cssId));
+  }
+
+  const childMappings = [];
+  const bindVarNames = new Set();
+  const templateDoc = JSDOM.fragment(template);
+  const seenTags = new Set();
+  for (const el of templateDoc.querySelectorAll("*")) {
+    const tag = el.tagName.toLowerCase();
+    if (!seenTags.has(tag)) {
+      seenTags.add(tag);
+      const childCompName = tag + ".html";
+      if (cx.loadedComponents.has(childCompName)) {
+        generateCSRClass(childCompName, cx);
+        const childClassName = childCompName.replace(".html", "").replace(/^\w/, c => c.toUpperCase());
+        childMappings.push({ tag, compClass: childClassName });
+      }
+    }
+    for (const attr of el.attributes) {
+      if (attr.name.startsWith("bind:")) {
+        bindVarNames.add(attr.value);
+      }
+    }
+  }
+
+  let csrRuntimeSource = null;
+  if (runtime) {
+    let injectCode = "";
+    for (const { name, defaultValue } of compProps) {
+      if (defaultValue !== undefined) {
+        injectCode += `let ${name} = ctx.${name}||${defaultValue};\n`;
+      } else {
+        injectCode += `let ${name} = ctx.${name};\n`;
+      }
+    }
+    for (const varName of bindVarNames) {
+      if (varName !== "self") {
+        injectCode += `let ${varName} = ctx.${varName};\n`;
+      }
+    }
+    if (topFuncSrc.length > 0) {
+      injectCode += "\n" + topFuncSrc.join("\n\n") + "\n";
+    }
+    runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + injectCode);
+    runtime = runtime.replace(`${RUNTIME_KW}()`, `function(self, ctx)`);
+    csrRuntimeSource = runtime.replace(/^(async\s+)?function\s+\w+/, "$1function");
+  }
+
+  const className = explicitClassName || compName.replace(".html", "").replace(/^\w/, c => c.toUpperCase());
+  const propsObj = {};
+  for (const { name, defaultValue } of compProps) {
+    propsObj[name] = defaultValue !== undefined ? defaultValue : null;
+  }
+
+  const childrenPart = childMappings.length > 0
+    ? ",\n      children: [" + childMappings.map(m => `{tag:"${m.tag}",compClass:${m.compClass}}`).join(",") + "]"
+    : "";
+  const runtimePart = csrRuntimeSource ? `,\n      runtime: ${csrRuntimeSource}` : "";
+  const classDef = `class ${className} extends ChocolaComponent {\n  constructor() {\n    super({\n      template: \`${escapeForTemplateLiteral(template)}\`,\n      hash: "${cssId}",\n      props: ${JSON.stringify(propsObj)}${runtimePart}${childrenPart}\n    });\n  }\n}`;
+  cx.csrClasses.set(compName, classDef);
 }
 
 
@@ -51,6 +144,17 @@ export function processComponentElement(
   if (!template) {
     console.warn(chalk.yellow(`${compName} — component is missing a <template>`));
     return false;
+  }
+
+  if (script) {
+    const importRegex = /import\s+(\w+)\s+from\s+['"]([^'"]+)['"]\s*;?\s*/g;
+    script = script.replace(importRegex, (_, importedName, importPath) => {
+      const importedCompName = path.basename(importPath).toLowerCase();
+      if (cx.loadedComponents.has(importedCompName)) {
+        generateCSRClass(importedCompName, cx, importedName);
+      }
+      return "";
+    });
   }
 
   const compProps = extractPropsDefaults(script);
@@ -213,6 +317,7 @@ export function processComponentElement(
     interpolateNode(child, ctxProxy)
   });
 
+  let csrRuntimeSource = null;
   const firstChild = fragment.children[0];
 
   if (firstChild && firstChild.nodeType === 1) {
@@ -272,6 +377,7 @@ export function processComponentElement(
           runtime = runtime.replace(/\$runtime\([^)]*\)\s*\{/, match => match + "\n" + injectCode);
 
           runtime = runtime.replace(`${RUNTIME_KW}()`, `${letter}r(self, ctx)`);
+          csrRuntimeSource = runtime.replace(/^function\s+\w+/, "function");
           cx.runtimeChunks.push(runtime);
           cx.runtimeMap && cx.runtimeMap.set(compName, { letter });
         } else {
@@ -296,14 +402,33 @@ export function processComponentElement(
     cx.scopedStyles.push(styles);
   }
 
+  if (csrRuntimeSource && !cx.csrClasses.has(compName)) {
+    generateCSRClass(compName, cx);
+  }
+
   element.replaceWith(fragment);
   return true;
 }
 
 export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent) {
   const cx = new ProcessContext(
-    loadedComponents, [], [], { value: null }, new Map(), [], new Map(), [], new Map()
+    loadedComponents, [], [], { value: null }, new Map(), [], new Map(), [], new Map(), new Map()
   );
+
+  for (const [compName, instance] of cx.loadedComponents) {
+    const script = instance.match(/<script>([\s\S]*?)<\/script>/i);
+    if (script) {
+      const importRegex = /import\s+(\w+)\s+from\s+['"]([^'"]+)['"]\s*;?\s*/g;
+      let match;
+      while ((match = importRegex.exec(script[1])) !== null) {
+        const importedName = match[1];
+        const importedCompName = path.basename(match[2]).toLowerCase();
+        if (cx.loadedComponents.has(importedCompName)) {
+          generateCSRClass(importedCompName, cx, importedName);
+        }
+      }
+    }
+  }
 
   appElements.forEach(el => {
     if (!el.isConnected) return;
@@ -312,13 +437,14 @@ export function processAllComponents(appElements, loadedComponents, pageSourceFi
   const runtimeScript = cx.runtimeChunks.join("\n");
   const hasComponents = cx.runtimeChunks.length > 0;
   const scopesCss = cx.scopedStyles.join("\n");
+  const csrClasses = [...cx.csrClasses.values()].join("\n\n");
 
   const hashMap = {};
   for (const [compName, hash] of cx.cssScopesMap) {
     hashMap[compName] = hash;
   }
 
-  return { runtimeScript, hasComponents, scopesCss, hashMap };
+  return { runtimeScript, hasComponents, scopesCss, hashMap, csrClasses };
 }
 
 function getNextLetter(letterState) {
