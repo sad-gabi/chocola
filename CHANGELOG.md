@@ -1,5 +1,9 @@
 # Chocola Changelog
 
+## 2.0.0-next.7 (Jul 26, 2026)
+
+Introduces client-side rendering capabilities to the Chocola framework. Components can now be compiled into JavaScript classes that extend ChocolaComponent, enabling dynamic component rendering in the browser [[#47](https://github.com/chocolajs/chocola/issues/47)]
+
 ## 2.0.0-next.6 (Jul 26, 2026)
 
 - Removed `chsrc` attribute [[#57](https://github.com/chocolajs/chocola/issues/57)]
