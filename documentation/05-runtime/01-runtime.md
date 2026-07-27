@@ -1,5 +1,5 @@
 ---
-title: Runtime
+title: $runtime
 description: Component runtime logic
 ---
 
