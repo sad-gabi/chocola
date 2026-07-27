@@ -1,13 +1,12 @@
 # chocola
 
-Chocola is a JavaScript library for creating web user interfaces.
+**The sweetest way to build the web.**
 
-`chocola` only contains the functionality to build and serve web static builds. For production you may want to implement `chocola` to your workflow with other frameworks until official workflows are provided.
+No bundler config. No virtual DOM. No hydration ceremony. Just `.html` files with `<template>`, `<script>`, and `<style>` — compiled to static HTML with scoped CSS, and optional runtime when you need it.
 
-## Usage
+Import components. Instantiate them. Mount, update, remove. All client-side. Same file, zero overhead.
 
 ```html
-<!-- Greeting.html -->
 <script>
     let self = new HTMLDivElement;
     let input = new HTMLInputElement;
@@ -33,4 +32,4 @@ Chocola is a JavaScript library for creating web user interfaces.
 
 ## Documentation
 
-See https://github.com/chocolajs/chocola/wiki/Overview
+https://github.com/chocolajs/chocola/wiki/Overview
