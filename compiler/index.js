@@ -209,8 +209,9 @@ export default async function compile(rootDir, buildConfig) {
   processPageConditionals(appContainer);
 
   const appElements = getAppElements(appContainer);
-  const { runtimeScript, scopesCss, hashMap } = processAllComponents(appElements, loadedComponents, pageSourcePath, srcIndexContent);
-  const runtimeFilename = await generateRuntimeScript(runtimeScript, paths.outDir);
+  const { runtimeScript, scopesCss, hashMap, csrClasses } = processAllComponents(appElements, loadedComponents, pageSourcePath, srcIndexContent);
+  const csrSource = await fs.readFile(new URL("../runtime/index.js", import.meta.url), "utf-8");
+  const runtimeFilenames = await generateRuntimeScript(runtimeScript, paths.outDir, csrSource, csrClasses);
   await processAssets(doc, rootDir, config.srcDir, paths.outDir);
 
   if (scopesCss) {
@@ -219,7 +220,9 @@ export default async function compile(rootDir, buildConfig) {
     appendStylesheetLink(doc, fileName);
   };
 
-  appendRuntimeScript(doc, runtimeFilename);
+  for (const name of runtimeFilenames) {
+    appendRuntimeScript(doc, name);
+  }
   const html = await serializeDOM(dom);
   await writeHTMLOutput(html, paths.outDir);
 

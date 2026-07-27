@@ -54,7 +54,6 @@ export function getScriptElements(doc) {
 
 export function appendRuntimeScript(doc, filename) {
   const runtimeScriptEl = doc.createElement("script");
-  runtimeScriptEl.type = "module";
   runtimeScriptEl.src = "./" + filename;
   doc.body.appendChild(runtimeScriptEl);
 }

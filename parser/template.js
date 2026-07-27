@@ -1,4 +1,3 @@
-import { throwError } from "../compiler/utils.js";
 import { compileExpression } from "./utils.js";
 import { hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "./context.js";
 
@@ -41,7 +40,7 @@ export function validateChainStructure(parent, sourceFile, sourceContent, parent
             if (lineNum !== null) loc = `${sourceFile}:${lineNum}`;
           }
         }
-        throwError(`${loc}\n    <${tag}> has ${attr} without a preceding if/del-if sibling`);
+        throw new Error(`${loc}\n    <${tag}> has ${attr} without a preceding if/del-if sibling`);
       }
       if (hasElse) {
         chainActive = false;
