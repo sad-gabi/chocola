@@ -1,6 +1,8 @@
-# chocola
+![Chochola • The sweetest way to build the web](https://chocolaframework.web.app/static/img/banner.jpg)
 
-**The sweetest way to build the web.**
+## What is Chocola
+
+Chocola is a new and sweeter way to build your web apps.
 
 No bundler config. No virtual DOM. No hydration ceremony. Just `.html` files with `<template>`, `<script>`, and `<style>` — compiled to static HTML with scoped CSS, and optional runtime when you need it.
 
@@ -29,6 +31,8 @@ Import components. Instantiate them. Mount, update, remove. All client-side. Sam
     h1 { color: chocolate; }
 </style>
 ```
+
+Chocola 2 is in current development and will add CSR SPA and much more features!
 
 ## Documentation
 
