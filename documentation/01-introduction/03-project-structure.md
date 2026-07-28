@@ -21,7 +21,7 @@ my-app/
 │   └── hashes.json
 ├── chocola.config.json
 ├── chocola.server.js
-├── index.js
+├── chocola.js
 ├── package.json
 └── .gitignore
 ```
@@ -95,7 +95,7 @@ Defines the paths and dev server settings:
 | `hostname` | `"localhost"` | Dev server hostname |
 | `port` | `3000` | Dev server port |
 
-## `index.js` — Build script
+## `chocola.js` — Build script
 
 Runs a production build:
 

@@ -7,9 +7,9 @@ Use `bind:*` attributes to capture DOM element references or their properties di
 
 ```html
 <script>
-    let self = new HTMLDivElement;
-    let input = new HTMLInputElement;
-    let inputType = new String;
+    let self;
+    let input;
+    let inputTypeg;
 
     function $runtime() {
         input.focus();

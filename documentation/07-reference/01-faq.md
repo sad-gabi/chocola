@@ -11,7 +11,7 @@ Chocola is a small web framework that lets you build apps out of reusable compon
 
 ### How do I get a project up and running?
 
-Install Chocola with `npm install chocola`, then create three things: a `chocola.config.json` (tells Chocola where your files live), an `index.js` (runs the build), and a `chocola.server.js` (starts the dev server). Your HTML entry point lives at `src/index.html`.
+Install Chocola with `npm install chocola`, then create three things: a `chocola.config.json` (tells Chocola where your files live), an `chocola.js` (runs the build), and a `chocola.server.js` (starts the dev server). Your HTML entry point lives at `src/index.html`.
 
 Once that's in place, `node chocola.server.js` gets you a live-reloading browser preview.
 

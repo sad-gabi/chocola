@@ -28,7 +28,7 @@ The runtime function receives access to component data and DOM elements through 
 
 ```html
 <script>
-    let self = new HTMLElement;
+    let self;
     export let count = 0;
 
     function $runtime() {
@@ -53,7 +53,7 @@ You can declare helper functions at the top level of `<script>` and call them fr
 
 ```html
 <script>
-    let self = new HTMLDivElement;
+    let self;
 
     function format(n) {
         return n.toFixed(2);

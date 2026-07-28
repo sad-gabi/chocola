@@ -12,7 +12,7 @@ Create a new instance in memory by importing a component in your script.
 ```js
 import ChatBubble from "./ChatBubble.html";
 
-let self = new HTMLElement;
+let self;
 
 function createBubble() {
     // reference to your new instance
@@ -27,7 +27,7 @@ To mount a new instance of a component in your app, use the `mount(target, props
 ```js
 import ChatBubble from "./ChatBubble.html";
 
-let self = new HTMLElement;
+let self;
 
 function createBubble() {
     const newBubble = new ChatBubble();
@@ -46,7 +46,7 @@ To change the values of the props of an instantiated component, use the `update(
 ```js
 import SendButton from "./SendButton.html";
 
-let self = new HTMLElement;
+let self;
 
 function $runtime() {
     const sendBtn = new SendButton();
@@ -66,7 +66,7 @@ For removing a instantiated component from your app, use the `remove()` method.
 ```js
 import ChatBubble from "./ChatBubble.html";
 
-let self = new HTMLElement;
+let self =;
 
 function createBubble() {
     const newBubble = new ChatBubble();

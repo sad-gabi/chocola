@@ -8,7 +8,7 @@ Chocola is a web framework designed for simplicity and modularity. It lets you b
 ```html
 <!-- file: Counter.html -->
 <script>
-    let self = new HTMLElement;
+    let self;
 
     export let start = 0;
 

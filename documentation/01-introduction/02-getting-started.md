@@ -13,7 +13,7 @@ my-app/
 │   └── index.html
 ├── chocola.config.json
 ├── chocola.server.js
-└── index.js
+└── chocola.js
 ```
 
 ## 2. Install Chocola
@@ -39,10 +39,10 @@ npm install chocola
 }
 ```
 
-## 4. Create `index.js`
+## 4. Create `chocola.js`
 
 ```js
-// file: index.js
+// file: chocola.js
 import { app } from "chocola/compiler";
 import path from "path";
 import { fileURLToPath } from "url";
