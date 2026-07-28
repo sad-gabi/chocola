@@ -14,7 +14,7 @@ A component is a single `.html` file with up to three sections:
 ```html
 <!-- file: MyComponent.html -->
 <script>
-    let self = new HTMLElement;
+    let self;
 
     export let title = "Default";
     export let count = 0;
@@ -93,10 +93,10 @@ Props without a default value (like `title` above) default to `undefined` unless
 ### 2. Root element placeholder
 
 ```js
-let self = new HTMLElement;
+let self;
 ```
 
-This is a DX placeholder for IDE autocompletion. At compile-time, `self` is replaced with the component's actual root DOM element.
+At compile-time, `self` is replaced with the component's actual root DOM element.
 
 ### 3. Runtime function
 
