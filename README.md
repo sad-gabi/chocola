@@ -10,8 +10,8 @@ Import components. Instantiate them. Mount, update, remove. All client-side. Sam
 
 ```html
 <script>
-    let self = new HTMLDivElement;
-    let input = new HTMLInputElement;
+    let self;
+    let input;
 
     export let title = "Hello";
 
