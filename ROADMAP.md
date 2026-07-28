@@ -49,8 +49,9 @@ Introducing the `$` prefix.
 - `for:each` and `switch/case` logic blocks
 - `<as:html></as:html>` blocks for raw HTML injection
 - `<const value="{foo}">` tag to define a local constant
-- `style:<style>="{foo}"` directive HTML attribute
+- `style:<style>="{foo}"`, `class:<class>="{foo}"` and `<attribute>?="{foo}"` directive HTML attribute
 - `$debug(...data)` method to add dev logs that will be removed in final build
+- `on:*` event shorthands
 - Typed properties
 
 ## V3 — Reactivity
