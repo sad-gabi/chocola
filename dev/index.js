@@ -144,7 +144,7 @@ export async function serve(__rootdir) {
   });
 
   server.listen(__config.port, __config.hostname, () => {
-    console.log(`Chocola App running at http://${__config.hostname}:${__config.port}/`);
+    console.log('Live server running at', chalk.hex("#68C4EE").underline(`http://${__config.hostname}:${__config.port}/`));
   });
 }
 
