@@ -97,7 +97,7 @@ function generateCSRClass(compName, cx, explicitClassName) {
     let injectCode = "";
     for (const { name, defaultValue } of compProps) {
       if (defaultValue !== undefined) {
-        injectCode += `let ${name} = ctx.${name}||${defaultValue};\n`;
+        injectCode += `let ${name} = ctx.${name}??${defaultValue};\n`;
       } else {
         injectCode += `let ${name} = ctx.${name};\n`;
       }
@@ -366,14 +366,14 @@ export function processComponentElement(
       const ctxDefParts = [];
       const declared = new Set();
       for (const [key, value] of Object.entries(runtimeCtx)) {
-        ctxDefParts.push(`let ${key} = ctx.${key}||${JSON.stringify(value)};\n`);
+        ctxDefParts.push(`let ${key} = ctx.${key}??${JSON.stringify(value)};\n`);
         declared.add(key);
       }
 
       for (const { name, defaultValue } of compProps) {
         if (declared.has(name)) continue;
         if (defaultValue !== undefined) {
-          ctxDefParts.push(`let ${name} = ctx.${name}||${defaultValue};\n`);
+          ctxDefParts.push(`let ${name} = ctx.${name}??${defaultValue};\n`);
         } else {
           ctxDefParts.push(`let ${name} = ctx.${name};\n`);
         }
