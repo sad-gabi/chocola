@@ -51,18 +51,18 @@ For each element inside `<app>`:
 
 1. **Match** — checks if tag name corresponds to a loaded component
 2. **Context** — extracts attributes as context
-3. **Chain validation** — validates `if`/`elif`/`else`/`del:if` structure on both slot content and component body separately, throwing with file location on violation
+3. **Chain validation** — validates `if`/`elif`/`else`/`mount:if` structure on both slot content and component body separately, throwing with file location on violation
 4. **Template** — renders component body via JSDOM fragment
 5. **Slots** — replaces `<slot>` elements with the original inner HTML
 6. **Attribute interpolation** — evaluates `{expr}` in attributes using `with(ctx)`
-7. **Conditionals** — evaluates `if`, `del:if`, `elif`, `else` attributes
+7. **Conditionals** — evaluates `if`, `mount:if`, `elif`, `else` attributes
    - `if={expr}` — hides element (`display: none`) when falsy
-   - `del:if={expr}` — removes element when falsy
+   - `mount:if={expr}` — removes element when falsy
    - `elif={expr}` — alternative condition in a chain
    - `else` — fallback in a chain
    - Chained via `condChain` state tracked per-parent in a `Map`
    - `else` closes the chain; non-conditional elements reset it
-   - `elif`/`else` without a preceding `if`/`del:if` throws an error
+   - `elif`/`else` without a preceding `if`/`mount:if` throws an error
 8. **Void elements** — `<void>` is a transparent conditional wrapper:
    - `<void if={expr}>` — renders children unwrapped when truthy
    - `<void elif={expr}>` — chain-aware alternative
@@ -139,5 +139,5 @@ compiler/index.js
 - **Client-Side Rendering (CSR)**: The `ChocolaComponent` base class (`runtime/index.js`) allows dynamic component instantiation in the browser via `mount`, `remove`, and `update` methods. It supports `bind:*` attributes, conditionals, slots, expression interpolation, and automatic event-listener cleanup.
 - **Component imports**: Component `<script>` blocks can use `import X from "./Y.html"` syntax. The compiler resolves these imports to known components, generates CSR subclasses for them, and strips the import lines from the build output. Imported components can be instantiated with `new X().mount(target, props)` in the `$runtime` function.
 - **CSR class naming**: When triggered by an `import` statement, the generated class matches the imported identifier casing (e.g., `import CommonButton` → `class CommonButton`). When generated from HTML tag usage, the name is derived from the filename with only the first letter capitalized.
-- **Conditional chains**: `if`/`del:if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with file location (line included when the error is within the same source file)
+- **Conditional chains**: `if`/`mount:if`/`elif`/`else` form sibling chains tracked per-parent; validated structurally before rendering with file location (line included when the error is within the same source file)
 - **Void elements**: `<void>` acts as a transparent wrapper that never renders itself; useful for conditional rendering without extra DOM nodes
