@@ -320,7 +320,7 @@ export function processComponentElement(
 
     const condAttrs = {};
     if (hasIf) condAttrs["if"] = child.getAttribute("if");
-    if (hasDelIf) condAttrs["del:if"] = getDelIfAttr(child);
+    if (hasDelIf) condAttrs["mount:if"] = getDelIfAttr(child);
     if (hasElif) condAttrs["elif"] = child.getAttribute("elif");
     if (hasElse) condAttrs["else"] = "";
 

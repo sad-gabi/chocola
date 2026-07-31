@@ -20,11 +20,11 @@ export function extractContextFromElement(element) {
 }
 
 export function hasDelIfAttr(el) {
-  return el.hasAttribute("del:if");
+  return el.hasAttribute("mount:if");
 }
 export function getDelIfAttr(el) {
-  return el.getAttribute("del:if");
+  return el.getAttribute("mount:if");
 }
 export function removeDelIfAttr(el) {
-  el.removeAttribute("del:if");
+  el.removeAttribute("mount:if");
 }
