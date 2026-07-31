@@ -4,9 +4,9 @@ import { protectCurlyBraces } from "../utils.js";
 import { genRandomId, incrementAlfabet, throwError, deterministicHash } from "./utils.js";
 import {
   extractPropsDefaults, extractRuntime, extractTopLevelFunctions,
-  extractContextFromElement, hasDelIfAttr, getDelIfAttr, removeDelIfAttr,
+  extractCtxFromEl, hasMountIf, getMountIf,
   reservedAttrs, validateChainStructure, applyConditionalToElement, interpolateNode,
-  scopeCss, compileExpression,
+  scopeCss, compileExpr,
 } from "../parser/index.js";
 import chalk from "./chalk.js";
 
@@ -174,7 +174,7 @@ export function processComponentElement(
   if (cx.staticCtxRegistry && cx.staticCtxRegistry.has(element)) {
     ctx = cx.staticCtxRegistry.get(element);
   } else {
-    ctx = extractContextFromElement(element);
+    ctx = extractCtxFromEl(element);
     cx.staticCtxRegistry && cx.staticCtxRegistry.set(element, ctx);
   }
 
@@ -182,7 +182,7 @@ export function processComponentElement(
     compProps.forEach(({ name, defaultValue }) => {
       if (defaultValue !== undefined && !(name in ctx)) {
         try {
-          ctx[name] = compileExpression(defaultValue, false)();
+          ctx[name] = compileExpr(defaultValue, false)();
         } catch {
           ctx[name] = defaultValue;
         }
@@ -233,7 +233,7 @@ export function processComponentElement(
     const condChain = condChains.get(parent);
 
     const hasIf = child.hasAttribute("if");
-    const hasDelIf = hasDelIfAttr(child);
+    const hasDelIf = hasMountIf(child);
     const hasElif = child.hasAttribute("elif");
     const hasElse = child.hasAttribute("else");
 
@@ -254,7 +254,7 @@ export function processComponentElement(
       if (hasElif || hasElse) {
         if (hasElif) {
           const expr = child.getAttribute("elif").slice(1, -1);
-          const fn = compileExpression(expr, true);
+          const fn = compileExpr(expr, true);
           if (!fn(ctxProxy)) {
             child.remove();
             return;
@@ -266,9 +266,9 @@ export function processComponentElement(
           condChain.active = false;
         }
       } else if (hasIf || hasDelIf) {
-        const raw = hasIf ? child.getAttribute("if") : getDelIfAttr(child);
+        const raw = hasIf ? child.getAttribute("if") : getMountIf(child);
         const expr = raw.slice(1, -1);
-        const fn = compileExpression(expr, true);
+        const fn = compileExpr(expr, true);
         condChain.active = true;
         if (fn(ctxProxy)) {
           child.replaceWith(...child.children);
@@ -309,7 +309,7 @@ export function processComponentElement(
           /\{([^}]+)\}/g,
           (_, expr) => {
             try {
-              return compileExpression(expr, true)(ctxProxy);
+              return compileExpr(expr, true)(ctxProxy);
             } catch {
               return "";
             }
@@ -320,7 +320,7 @@ export function processComponentElement(
 
     const condAttrs = {};
     if (hasIf) condAttrs["if"] = child.getAttribute("if");
-    if (hasDelIf) condAttrs["mount:if"] = getDelIfAttr(child);
+    if (hasDelIf) condAttrs["mount:if"] = getMountIf(child);
     if (hasElif) condAttrs["elif"] = child.getAttribute("elif");
     if (hasElse) condAttrs["else"] = "";
 

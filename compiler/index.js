@@ -17,7 +17,7 @@ import {
 import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
 import { genRandomId, throwError } from "./utils.js";
-import { compileExpression, hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "../parser/index.js";
+import { compileExpr, hasMountIf, getMountIf, removeMountIf } from "../parser/index.js";
 import {
   copyStaticDir,
   getComponents,
@@ -114,7 +114,7 @@ function processPageConditionals(parent) {
 
   for (const child of children) {
     const hasIf = child.hasAttribute("if");
-    const hasDelIf = hasDelIfAttr(child);
+    const hasDelIf = hasMountIf(child);
     const hasElif = child.hasAttribute("elif");
     const hasElse = child.hasAttribute("else");
 
@@ -126,7 +126,7 @@ function processPageConditionals(parent) {
     if (hasIf) {
       const raw = child.getAttribute("if");
       const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-      const fn = compileExpression(expr, false);
+      const fn = compileExpr(expr, false);
       const result = fn();
       chainActive = true;
       if (result) {
@@ -137,9 +137,9 @@ function processPageConditionals(parent) {
       }
       child.removeAttribute("if");
     } else if (hasDelIf) {
-      const raw = getDelIfAttr(child);
+      const raw = getMountIf(child);
       const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-      const fn = compileExpression(expr, false);
+      const fn = compileExpr(expr, false);
       const result = fn();
       chainActive = true;
       if (result) {
@@ -148,11 +148,11 @@ function processPageConditionals(parent) {
         child.remove();
         chainRendered = false;
       }
-      removeDelIfAttr(child);
+      removeMountIf(child);
     } else if (hasElif) {
       const raw = child.getAttribute("elif");
       const expr = raw.startsWith("{") ? raw.slice(1, -1) : raw;
-      const fn = compileExpression(expr, false);
+      const fn = compileExpr(expr, false);
       const result = fn();
       if (result) {
         chainRendered = true;

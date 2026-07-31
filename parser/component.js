@@ -44,7 +44,7 @@ export function extractRuntime(script, compName) {
     }
   }
 
-  throw new Error(`${compName} $runtime function has unclosed curly braces.`);
+  throw new Error(`${compName} $runtime function has unclosed curly braces`);
 }
 
 export function extractTopLevelFunctions(script, excludeName) {

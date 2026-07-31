@@ -2,7 +2,7 @@ import { restoreTemplateChars } from "../utils.js";
 
 const compiledCache = new Map();
 
-export function compileExpression(expr, useCtx) {
+export function compileExpr(expr, useCtx) {
   expr = restoreTemplateChars(expr);
   const key = useCtx ? `ctx:${expr}` : `raw:${expr}`;
   let fn = compiledCache.get(key);
