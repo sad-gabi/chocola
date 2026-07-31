@@ -1,5 +1,11 @@
 # Chocola Changelog
 
+## 2.0.0-next.8 (Jul 31, 2026)
+- **`node_modules` size dropped from 18.50 MB to 3.50 MB!:** replaced `jsdom` dependency with `linkedom`, wich has a smaller dependency tree, and is theoretically faster [[#74](https://github.com/chocolajs/chocola/issues/75)]
+- `del:if` was changed to `mount:if` to make it more semantically intuitive [[#68](https://github.com/chocolajs/chocola/issues/68)]
+- A critical bug made impossible to declare props with a `false` value. Fixed [[#73](https://github.com/chocolajs/chocola/issues/73)]
+- Changed the logging art for something more sober but still in-brand [[#72](https://github.com/chocolajs/chocola/issues/72)]
+
 ## 2.0.0-next.7 (Jul 26, 2026)
 
 Introduces client-side rendering capabilities to the Chocola framework. Components can now be compiled into JavaScript classes that extend ChocolaComponent, enabling dynamic component rendering in the browser [[#47](https://github.com/chocolajs/chocola/issues/47)]

@@ -1,6 +1,6 @@
 {
   "name": "chocola",
-  "version": "2.0.0-next.7",
+  "version": "2.0.0-next.8",
   "description": "The sweetest way to build the web",
   "keywords": [
     "web",
@@ -35,6 +35,6 @@
     "./dev": "./dev/index.js"
   },
   "dependencies": {
-    "jsdom": "^27.4.0"
+    "linkedom": "^0.18.13"
   }
 }

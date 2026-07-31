@@ -1,6 +1,12 @@
+const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";
+const RBRACE_PH = "_%%CHOCOLA-RBRACE%%_";
+
 const exprCache = new Map();
 
 function compileExpression(expr, useCtx) {
+  expr = expr.replace(/_%%CHOCOLA-(?:AMP|LT|GT)\d+%%_/g, char =>
+    char.includes("AMP") ? "&" : char.includes("LT") ? "<" : ">"
+  );
   const key = useCtx ? "ctx:" + expr : "raw:" + expr;
   let fn = exprCache.get(key);
   if (!fn) {
@@ -47,7 +53,7 @@ function applyConditionalToElement(child, ctx, chain, hasIf, hasDelIf, hasElif, 
     }
     child.removeAttribute("if");
   } else if (hasDelIf) {
-    const expr = child.getAttribute("del:if").slice(1, -1);
+    const expr = child.getAttribute("mount:if").slice(1, -1);
     chain.active = true;
     if (compileExpression(expr, true)(ctx)) {
       chain.rendered = true;
@@ -55,7 +61,7 @@ function applyConditionalToElement(child, ctx, chain, hasIf, hasDelIf, hasElif, 
       child.remove();
       chain.rendered = false;
     }
-    child.removeAttribute("del:if");
+    child.removeAttribute("mount:if");
   } else if (hasElif) {
     const expr = child.getAttribute("elif").slice(1, -1);
     if (compileExpression(expr, true)(ctx)) {
@@ -73,9 +79,6 @@ function applyConditionalToElement(child, ctx, chain, hasIf, hasDelIf, hasElif, 
     chain.rendered = false;
   }
 }
-
-const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";
-const RBRACE_PH = "_%%CHOCOLA-RBRACE%%_";
 
 function interpolateAttributes(element, ctx) {
   for (const el of [element, ...element.querySelectorAll("*")]) {
@@ -99,7 +102,7 @@ function interpolateAttributes(element, ctx) {
 function processConditionals(element, ctx, chain) {
   for (const child of [...element.children]) {
     const hasIf = child.hasAttribute("if");
-    const hasDelIf = child.hasAttribute("del:if");
+    const hasDelIf = child.hasAttribute("mount:if");
     const hasElif = child.hasAttribute("elif");
     const hasElse = child.hasAttribute("else");
 
@@ -255,7 +258,7 @@ class ChocolaComponent {
       for (const el of els) {
         const props = {};
         for (const attr of [...el.attributes]) {
-          if (attr.name.startsWith("data-ch") || attr.name === "if" || attr.name === "del:if" || attr.name === "elif" || attr.name === "else") continue;
+          if (attr.name.startsWith("data-ch") || attr.name === "if" || attr.name === "mount:if" || attr.name === "elif" || attr.name === "else") continue;
           props[attr.name] = attr.value;
         }
         const instance = new compClass();

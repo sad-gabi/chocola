@@ -26,48 +26,42 @@ import {
   processScript,
   processStylesheet,
 } from "./pipeline.js";
+import { text } from "stream/consumers";
 
-
-const logSeparation = chalk.yellow(`
-________________________________________________________________________
-========================================================================
-        `);
+const GOLD_COLOR = "#D87416";
+const WHITE_COLOR = "#FAFAF8";
+const TEXT_FAINT = "#E7EBE1";
 
 function logBanner() {
-  console.log(chalk.bold.hex("#945e33")(`\n                     RUNNING CHOCOLA BUNDLER`));
-  console.log(logSeparation);
   console.log(
-    chalk.hex("#945e33")(`
-
-
-     ▄████▄   ██░ ██  ▒█████   ▄████▄   ▒█████   ██▓    ▄▄▄      
-     ▒██▀ ▀█  ▓██░ ██▒▒██▒  ██▒▒██▀ ▀█  ▒██▒  ██▒▓██▒   ▒████▄    
-     ▒▓█    ▄ ▒██▀▀██░▒██░  ██▒▒▓█    ▄ ▒██░  ██▒▒██░   ▒██  ▀█▄  
-     ▒▓▓▄ ▄██▒░▓█ ░██ ▒██   ██░▒▓▓▄ ▄██▒▒██   ██░▒██░   ░██▄▄▄▄██ 
-     ▒ ▓███▀ ░░▓█▒░██▓░ ████▓▒░▒ ▓███▀ ░░ ████▓▒░░██████▒▓█   ▓██▒
-     ░ ░▒ ▒  ░ ▒ ░░▒░▒░ ▒░▒░▒░ ░ ░▒ ▒  ░░ ▒░▒░▒░ ░ ▒░▓  ░▒▒   ▓▒█░
-     ░  ▒    ▒ ░▒░ ░  ░ ░ ▒ ▒░   ░  ▒     ░ ░ ▒░ ░ ░ ▒  ░ ░   ▒▒ ░
-     ░         ░  ░░ ░░ ░ ░ ░ ▒  ░        ░ ░ ░ ░ ▒    ░ ░    ░   ▒   
-     ░ ░       ░  ░  ░    ░ ░  ░ ░          ░ ░      ░  ░     ░  ░
-     ░                         ░                                  
-
-
-        `)
+    chalk.hex(GOLD_COLOR)(`
+   ┌─────────────────────────────────────────────┐
+   │┌-------------------------------------------┐│
+   ││                                           ││`)
+  );
+  console.log(
+    chalk.hex(GOLD_COLOR)(`   ││            `) +
+    chalk.bold.hex(WHITE_COLOR)(`{`) +
+    chalk.bold.hex(GOLD_COLOR)(`  C H O C O L A  `) +
+    chalk.bold.hex(WHITE_COLOR)(`}`) +
+    chalk.hex(GOLD_COLOR)(`            ││\n`) +
+    chalk.hex(GOLD_COLOR)(`   ││                                           ││
+   ││     `) +
+   chalk.hex(TEXT_FAINT)(`THE SWEETEST WAY TO BUILD THE WEB`) +
+   chalk.hex(GOLD_COLOR)(`     ││
+   ││                                           ││
+   │└-------------------------------------------┘│
+   └─────────────────────────────────────────────┘
+   `)
   );
 }
 
 function logSuccess(outDirPath) {
-  console.log(`
-              ▄▄  ▄▄▄  ▄▄▄▄    ▄▄▄▄   ▄▄▄  ▄▄  ▄▄ ▄▄▄▄▄  ██ 
-              ██ ██▀██ ██▄██   ██▀██ ██▀██ ███▄██ ██▄▄   ██ 
-            ▄▄█▀ ▀███▀ ██▄█▀   ████▀ ▀███▀ ██ ▀██ ██▄▄▄  ▄▄ 
-                                                
-        `);
   console.log(
     chalk.bold.green(">"),
     "Project bundled succesfully at",
-    chalk.green.underline(outDirPath) + "\n\n"
-  );
+    chalk.green.underline(outDirPath));
+    console.log(chalk.bold.green(`\nJOB DONE!\n`));
 }
 
 async function setupOutputDirectory(outDirPath, emptyOutDir) {
@@ -81,9 +75,8 @@ async function loadAndDisplayComponents(srcComponentsPath) {
   const foundComponents = await getComponents(srcComponentsPath);
   const { loadedComponents, notDefComps: emptyComps, componentsLib } = foundComponents;
 
-  console.log(`       LOADING COMPONENTS`);
   console.log(chalk.bold.green(">"), "Components found in", chalk.green.underline(srcComponentsPath) + ":");
-  console.log("   ", componentsLib, "\n");
+  console.log("   ", componentsLib, "\n\n");
 
   if (emptyComps?.length > 0) {
     console.warn(chalk.bold.yellow("WARNING!"), "The following component files are empty:");
@@ -139,7 +132,7 @@ function processPageConditionals(parent) {
       if (result) {
         chainRendered = true;
       } else {
-        child.remove();
+        child.style.display = "none";
         chainRendered = false;
       }
       child.removeAttribute("if");
@@ -188,7 +181,6 @@ export default async function compile(rootDir, buildConfig) {
 
   const config = await loadConfig(rootDir);
   const paths = resolvePaths(rootDir, config);
-  !isHotReload && console.log(logSeparation);
 
   await setupOutputDirectory(paths.outDir, config.emptyOutDir);
 
@@ -197,13 +189,10 @@ export default async function compile(rootDir, buildConfig) {
   const pageSourcePath = indexFiles.srcPath;
 
   const loadedComponents = await loadAndDisplayComponents(paths.components);
-  !isHotReload && console.log(logSeparation);
-  !isHotReload && console.log(`       BUNDLING STATIC BUILD`);
-  !isHotReload && console.log(chalk.bold.green(">"), "Creating Chocola static build in directory", chalk.green.underline(paths.outDir) + "\n");
-  !isHotReload && console.log(logSeparation);
+  !isHotReload && console.log(chalk.bold.green(">"), "Creating Chocola static build in directory", chalk.green.underline(paths.outDir));
 
   const dom = createDOM(srcIndexContent);
-  const doc = dom.window.document;
+  const doc = dom.document;
   const appContainer = validateAppContainer(doc);
 
   processPageConditionals(appContainer);

@@ -1,10 +1,11 @@
 import { compileExpression } from "./utils.js";
+import { restoreTemplateChars } from "../utils.js";
 
 export function extractContextFromElement(element) {
   const ctx = {};
   for (const attr of element.attributes) {
     const key = attr.name;
-    const val = attr.value;
+    const val = restoreTemplateChars(attr.value);
     if (!val.includes("{")) { ctx[key] = val; continue; }
     const matches = [...val.matchAll(/\{([^}]+)\}/g)];
     if (matches.length === 1 && matches[0][0] === val) {
@@ -19,11 +20,11 @@ export function extractContextFromElement(element) {
 }
 
 export function hasDelIfAttr(el) {
-  return el.hasAttribute("del:if");
+  return el.hasAttribute("mount:if");
 }
 export function getDelIfAttr(el) {
-  return el.getAttribute("del:if");
+  return el.getAttribute("mount:if");
 }
 export function removeDelIfAttr(el) {
-  el.removeAttribute("del:if");
+  el.removeAttribute("mount:if");
 }

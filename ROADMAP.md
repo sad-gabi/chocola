@@ -37,6 +37,7 @@ Introducing the `$` prefix.
 - Scoped functions
 - `bind:` attribute for manipulating DOM elements.
 - Deterministic CSS scope hashes with a reference map written to `.chocola/hashes.json`.
+- Changed `del:if` directive to `mount:if`.
 
 ### Breaking changes
 - Runtime component instancing

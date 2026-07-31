@@ -1,5 +1,5 @@
 import path from "path";
-import { JSDOM } from "jsdom";
+import { parseHTML } from "linkedom";
 import { protectCurlyBraces } from "../utils.js";
 import { genRandomId, incrementAlfabet, throwError, deterministicHash } from "./utils.js";
 import {
@@ -31,6 +31,17 @@ function escapeForTemplateLiteral(str) {
   return str.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\${/g, "\\${");
 }
 
+function parseFragment(html, doc) {
+  const fragment = doc.createDocumentFragment();
+  const temp = doc.createElement("div");
+  temp.innerHTML = html;
+  const children = [...temp.childNodes];
+  for (const child of children) {
+    fragment.appendChild(child);
+  }
+  return fragment;
+}
+
 function generateCSRClass(compName, cx, explicitClassName) {
   if (cx.csrClasses.has(compName)) return;
 
@@ -38,8 +49,8 @@ function generateCSRClass(compName, cx, explicitClassName) {
   if (!instance) return;
 
   instance = protectCurlyBraces(instance);
-  const dom = new JSDOM(instance);
-  const doc = dom.window.document;
+  const dom = parseHTML(instance);
+  const doc = dom.document;
   const script = doc.querySelector("script")?.innerHTML;
   const template = doc.querySelector("template")?.innerHTML;
   const styles = doc.querySelector("style")?.innerHTML;
@@ -61,7 +72,7 @@ function generateCSRClass(compName, cx, explicitClassName) {
 
   const childMappings = [];
   const bindVarNames = new Set();
-  const templateDoc = JSDOM.fragment(template);
+  const templateDoc = parseFragment(template, doc);
   const seenTags = new Set();
   for (const el of templateDoc.querySelectorAll("*")) {
     const tag = el.tagName.toLowerCase();
@@ -86,7 +97,7 @@ function generateCSRClass(compName, cx, explicitClassName) {
     let injectCode = "";
     for (const { name, defaultValue } of compProps) {
       if (defaultValue !== undefined) {
-        injectCode += `let ${name} = ctx.${name}||${defaultValue};\n`;
+        injectCode += `let ${name} = ctx.${name}??${defaultValue};\n`;
       } else {
         injectCode += `let ${name} = ctx.${name};\n`;
       }
@@ -135,8 +146,8 @@ export function processComponentElement(
   if (renderChain && renderChain.includes(compName)) return false;
 
   instance = protectCurlyBraces(instance);
-  const dom = new JSDOM(instance);
-  const doc = dom.window.document;
+  const dom = parseHTML(instance);
+  const doc = dom.document;
   let script = doc.querySelector("script")?.innerHTML;
   let template = doc.querySelector("template")?.innerHTML;
   let styles = doc.querySelector("style")?.innerHTML;
@@ -195,9 +206,9 @@ export function processComponentElement(
     get(target, key) { return target[key]; }
   });
 
-  const fragment = JSDOM.fragment(template);
+  const fragment = parseFragment(template, doc);
 
-  const slotFragment = JSDOM.fragment(elInnerHtml);
+  const slotFragment = parseFragment(elInnerHtml, doc);
   if (sourceFile) {
     validateChainStructure(slotFragment, sourceFile, sourceContent, elInnerHtml);
   }
@@ -292,19 +303,28 @@ export function processComponentElement(
         return;
       }
 
-      attribute.value = attribute.value.replace(
-        /\{([^}]+)\}/g,
-        (_, expr) => {
-          try {
-            return compileExpression(expr, true)(ctxProxy);
-          } catch {
-            return "";
+      child.setAttribute(
+        attribute.name,
+        attribute.value.replace(
+          /\{([^}]+)\}/g,
+          (_, expr) => {
+            try {
+              return compileExpression(expr, true)(ctxProxy);
+            } catch {
+              return "";
+            }
           }
-        }
+        )
       );
     });
 
-    processComponentElement(
+    const condAttrs = {};
+    if (hasIf) condAttrs["if"] = child.getAttribute("if");
+    if (hasDelIf) condAttrs["mount:if"] = getDelIfAttr(child);
+    if (hasElif) condAttrs["elif"] = child.getAttribute("elif");
+    if (hasElse) condAttrs["else"] = "";
+
+    const processed = processComponentElement(
       child,
       cx,
       renderChain.concat(compName),
@@ -312,9 +332,17 @@ export function processComponentElement(
       template
     );
 
-    applyConditionalToElement(child, ctxProxy, condChain, hasIf, hasDelIf, hasElif, hasElse);
+    let condTarget = child;
+    if (processed && processed.nodeType === 1) {
+      condTarget = processed;
+      for (const [name, value] of Object.entries(condAttrs)) {
+        condTarget.setAttribute(name, value);
+      }
+    }
 
-    interpolateNode(child, ctxProxy)
+    applyConditionalToElement(condTarget, ctxProxy, condChain, hasIf, hasDelIf, hasElif, hasElse);
+
+    interpolateNode(condTarget, ctxProxy)
   });
 
   let csrRuntimeSource = null;
@@ -338,14 +366,14 @@ export function processComponentElement(
       const ctxDefParts = [];
       const declared = new Set();
       for (const [key, value] of Object.entries(runtimeCtx)) {
-        ctxDefParts.push(`let ${key} = ctx.${key}||${JSON.stringify(value)};\n`);
+        ctxDefParts.push(`let ${key} = ctx.${key}??${JSON.stringify(value)};\n`);
         declared.add(key);
       }
 
       for (const { name, defaultValue } of compProps) {
         if (declared.has(name)) continue;
         if (defaultValue !== undefined) {
-          ctxDefParts.push(`let ${name} = ctx.${name}||${defaultValue};\n`);
+          ctxDefParts.push(`let ${name} = ctx.${name}??${defaultValue};\n`);
         } else {
           ctxDefParts.push(`let ${name} = ctx.${name};\n`);
         }
@@ -406,8 +434,12 @@ export function processComponentElement(
     generateCSRClass(compName, cx);
   }
 
+  if (element.style.display === "none" && firstChild && firstChild.nodeType === 1) {
+    firstChild.style.display = "none";
+  }
+
   element.replaceWith(fragment);
-  return true;
+  return firstChild && firstChild.nodeType === 1 ? firstChild : true;
 }
 
 export function processAllComponents(appElements, loadedComponents, pageSourceFile, pageSourceContent) {

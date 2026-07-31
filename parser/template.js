@@ -1,7 +1,7 @@
 import { compileExpression } from "./utils.js";
 import { hasDelIfAttr, getDelIfAttr, removeDelIfAttr } from "./context.js";
 
-export const reservedAttrs = ["if", "del:if", "elif", "else"];
+export const reservedAttrs = ["if", "mount:if", "elif", "else"];
 
 export function getLineNumber(sourceContent, parentContent, idxInParent) {
   if (sourceContent === parentContent) {

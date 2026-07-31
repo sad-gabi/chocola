@@ -38,7 +38,7 @@ Only `<template>` is required — `<script>` and `<style>` are optional.
 
 ## `<template>` — HTML Markup
 
-The template contains the component's HTML. It supports bindings via `{expr}`, conditionals (`if`, `del:if`, `elif`, `else`), `<slot>` for content projection, `<void>` as a transparent wrapper, and `bind:*` for DOM element references.
+The template contains the component's HTML. It supports bindings via `{expr}`, conditionals (`if`, `mount:if`, `elif`, `else`), `<slot>` for content projection, `<void>` as a transparent wrapper, and `bind:*` for DOM element references.
 
 ```html
 <template>
