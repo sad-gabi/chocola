@@ -1,10 +1,11 @@
 import { compileExpression } from "./utils.js";
+import { restoreTemplateChars } from "../utils.js";
 
 export function extractContextFromElement(element) {
   const ctx = {};
   for (const attr of element.attributes) {
     const key = attr.name;
-    const val = attr.value;
+    const val = restoreTemplateChars(attr.value);
     if (!val.includes("{")) { ctx[key] = val; continue; }
     const matches = [...val.matchAll(/\{([^}]+)\}/g)];
     if (matches.length === 1 && matches[0][0] === val) {

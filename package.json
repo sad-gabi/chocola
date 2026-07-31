@@ -35,6 +35,6 @@
     "./dev": "./dev/index.js"
   },
   "dependencies": {
-    "jsdom": "^27.4.0"
+    "linkedom": "^0.18.13"
   }
 }

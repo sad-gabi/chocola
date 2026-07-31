@@ -132,7 +132,7 @@ function processPageConditionals(parent) {
       if (result) {
         chainRendered = true;
       } else {
-        child.remove();
+        child.style.display = "none";
         chainRendered = false;
       }
       child.removeAttribute("if");
@@ -192,7 +192,7 @@ export default async function compile(rootDir, buildConfig) {
   !isHotReload && console.log(chalk.bold.green(">"), "Creating Chocola static build in directory", chalk.green.underline(paths.outDir));
 
   const dom = createDOM(srcIndexContent);
-  const doc = dom.window.document;
+  const doc = dom.document;
   const appContainer = validateAppContainer(doc);
 
   processPageConditionals(appContainer);

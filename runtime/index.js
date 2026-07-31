@@ -1,6 +1,12 @@
+const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";
+const RBRACE_PH = "_%%CHOCOLA-RBRACE%%_";
+
 const exprCache = new Map();
 
 function compileExpression(expr, useCtx) {
+  expr = expr.replace(/_%%CHOCOLA-(?:AMP|LT|GT)\d+%%_/g, char =>
+    char.includes("AMP") ? "&" : char.includes("LT") ? "<" : ">"
+  );
   const key = useCtx ? "ctx:" + expr : "raw:" + expr;
   let fn = exprCache.get(key);
   if (!fn) {
@@ -73,9 +79,6 @@ function applyConditionalToElement(child, ctx, chain, hasIf, hasDelIf, hasElif, 
     chain.rendered = false;
   }
 }
-
-const LBRACE_PH = "_%%CHOCOLA-LBRACE%%_";
-const RBRACE_PH = "_%%CHOCOLA-RBRACE%%_";
 
 function interpolateAttributes(element, ctx) {
   for (const el of [element, ...element.querySelectorAll("*")]) {
