@@ -1,7 +1,6 @@
 # Chocola Changelog
 
 ## 2.0.0-next.8 (Jul 31, 2026)
-18.5 MB
 - **`node_modules` size dropped from 18.50 MB to 3.50 MB!:** replaced `jsdom` dependency with `linkedom`, wich has a smaller dependency tree, and is theoretically faster [[#74](https://github.com/chocolajs/chocola/issues/75)]
 - `del:if` was changed to `mount:if` to make it more semantically intuitive [[#68](https://github.com/chocolajs/chocola/issues/68)]
 - A critical bug made impossible to declare props with a `false` value. Fixed [[#73](https://github.com/chocolajs/chocola/issues/73)]
