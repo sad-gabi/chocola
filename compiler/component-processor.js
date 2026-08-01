@@ -3,7 +3,7 @@ import { parseHTML } from "linkedom";
 import { protectCurlyBraces } from "../utils.js";
 import { genRandomId, incrementAlfabet, throwError, deterministicHash } from "./utils.js";
 import {
-  extractPropsDefaults, extractRuntime, extractTopLevelFunctions,
+  extractPropsDefaults, extractRuntime, extractTopLevelFunctions, extractTopLevelVariables,
   extractCtxFromEl, hasMountIf, getMountIf,
   reservedAttrs, validateChainStructure, applyConditionalToElement, interpolateNode,
   scopeCss, compileExpr,
@@ -59,6 +59,7 @@ function generateCSRClass(compName, cx, explicitClassName) {
 
   const compProps = extractPropsDefaults(script);
   const topFuncSrc = extractTopLevelFunctions(script || "", RUNTIME_KW);
+  const topVars = extractTopLevelVariables(script || "");
   let runtime = extractRuntime(script || "", compName);
 
   if (!cx.cssScopesMap.has(compName)) {
@@ -93,13 +94,23 @@ function generateCSRClass(compName, cx, explicitClassName) {
   }
 
   let csrRuntimeSource = null;
+  const injectedNames = new Set(compProps.map(p => p.name));
+  for (const varName of bindVarNames) injectedNames.add(varName);
+  const topVarsToInject = topVars.filter(v => !injectedNames.has(v.name));
   if (runtime) {
     let injectCode = "";
     for (const { name, defaultValue } of compProps) {
       if (defaultValue !== undefined) {
-        injectCode += `let ${name} = ctx.${name}??${defaultValue};\n`;
+        injectCode += `let ${name} = ctx.${name}??(${defaultValue});\n`;
       } else {
         injectCode += `let ${name} = ctx.${name};\n`;
+      }
+    }
+    for (const { keyword, name, value } of topVarsToInject) {
+      if (value !== undefined) {
+        injectCode += `${keyword} ${name} = ctx.${name}??(${value});\n`;
+      } else {
+        injectCode += `${keyword} ${name};\n`;
       }
     }
     for (const varName of bindVarNames) {
@@ -116,16 +127,22 @@ function generateCSRClass(compName, cx, explicitClassName) {
   }
 
   const className = explicitClassName || compName.replace(".html", "").replace(/^\w/, c => c.toUpperCase());
-  const propsObj = {};
+  const propsParts = [];
   for (const { name, defaultValue } of compProps) {
-    propsObj[name] = defaultValue !== undefined ? defaultValue : null;
+    propsParts.push(`${JSON.stringify(name)}: ${defaultValue !== undefined ? defaultValue : "null"}`);
+  }
+  for (const { name, value } of topVarsToInject) {
+    if (value !== undefined) {
+      propsParts.push(`${JSON.stringify(name)}: ${value}`);
+    }
   }
 
   const childrenPart = childMappings.length > 0
     ? ",\n      children: [" + childMappings.map(m => `{tag:"${m.tag}",compClass:${m.compClass}}`).join(",") + "]"
     : "";
   const runtimePart = csrRuntimeSource ? `,\n      runtime: ${csrRuntimeSource}` : "";
-  const classDef = `class ${className} extends ChocolaComponent {\n  constructor() {\n    super({\n      template: \`${escapeForTemplateLiteral(template)}\`,\n      hash: "${cssId}",\n      props: ${JSON.stringify(propsObj)}${runtimePart}${childrenPart}\n    });\n  }\n}`;
+  const propsPart = propsParts.length > 0 ? `{ ${propsParts.join(", ")} }` : "{}";
+  const classDef = `class ${className} extends ChocolaComponent {\n  constructor() {\n    super({\n      template: \`${escapeForTemplateLiteral(template)}\`,\n      hash: "${cssId}",\n      props: ${propsPart}${runtimePart}${childrenPart}\n    });\n  }\n}`;
   cx.csrClasses.set(compName, classDef);
 }
 
@@ -191,6 +208,15 @@ export function processComponentElement(
   }
 
   const topFuncSrc = extractTopLevelFunctions(script || "", RUNTIME_KW);
+  const topVars = extractTopLevelVariables(script || "");
+  for (const { name, value } of topVars) {
+    if (name in ctx) continue;
+    if (value !== undefined) {
+      try {
+        ctx[name] = compileExpr(value, false)();
+      } catch {}
+    }
+  }
   for (const src of topFuncSrc) {
     try {
       const fn = (0, eval)("(" + src + ")");
@@ -373,7 +399,7 @@ export function processComponentElement(
       for (const { name, defaultValue } of compProps) {
         if (declared.has(name)) continue;
         if (defaultValue !== undefined) {
-          ctxDefParts.push(`let ${name} = ctx.${name}??${defaultValue};\n`);
+          ctxDefParts.push(`let ${name} = ctx.${name}??(${defaultValue});\n`);
         } else {
           ctxDefParts.push(`let ${name} = ctx.${name};\n`);
         }
@@ -393,6 +419,14 @@ export function processComponentElement(
           const topFuncs = topFuncSrc;
 
           let injectCode = ctxDef;
+          for (const b of bindings) declared.add(b.varName);
+          const undeclaredTopVars = topVars.filter(v => !declared.has(v.name));
+          if (undeclaredTopVars.length > 0) {
+            injectCode += "\n" + undeclaredTopVars.map(v => v.value !== undefined
+              ? `${v.keyword} ${v.name} = ctx.${v.name}??(${v.value});`
+              : `${v.keyword} ${v.name};`
+            ).join("\n") + "\n";
+          }
           if (bindings.length > 0) {
             injectCode += "\n" + bindings.map(b => {
               const accessor = b.prop === "self" ? "" : "." + b.prop;
