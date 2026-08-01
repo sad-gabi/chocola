@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { performance } from "perf_hooks";
 import chalk from "./chalk.js";
 import { loadConfig, resolvePaths } from "./config.js";
 import {
@@ -56,12 +57,17 @@ function logBanner() {
   );
 }
 
-function logSuccess(outDirPath) {
+function logSuccess(outDirPath, durationMs) {
   console.log(
     chalk.bold.green(">"),
     "Project bundled succesfully at",
     chalk.green.underline(outDirPath));
-    console.log(chalk.bold.green(`\nJOB DONE!\n`));
+    console.log(chalk.bold.green(`\nJOB DONE!`) + chalk.hex(TEXT_FAINT)(` (${formatDuration(durationMs)})\n`));
+}
+
+function formatDuration(ms) {
+  if (ms >= 1000) return (ms / 1000).toFixed(2) + "s";
+  return Math.round(ms) + "ms";
 }
 
 async function setupOutputDirectory(outDirPath, emptyOutDir) {
@@ -177,6 +183,7 @@ function processPageConditionals(parent) {
 
 export default async function compile(rootDir, buildConfig) {
   const isHotReload = buildConfig?.isHotReload || null;
+  const startTime = performance.now();
   !isHotReload && logBanner();
 
   const config = await loadConfig(rootDir);
@@ -225,8 +232,10 @@ export default async function compile(rootDir, buildConfig) {
   await fs.mkdir(chocolaDir, { recursive: true });
   await fs.writeFile(path.join(chocolaDir, "hashes.json"), JSON.stringify(hashMap, null, 2) + "\n");
 
-  !isHotReload && logSuccess(paths.outDir);
-  isHotReload && console.log("Dev server updated");
+  const durationMs = performance.now() - startTime;
+
+  !isHotReload && logSuccess(paths.outDir, durationMs);
+  isHotReload && console.log("Dev server updated " + chalk.hex(TEXT_FAINT)(`(${formatDuration(durationMs)})`));
 }
 
 /**
