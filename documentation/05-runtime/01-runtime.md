@@ -47,6 +47,28 @@ The runtime function receives access to component data and DOM elements through 
 </template>
 ```
 
+## Top-Level Variables
+
+You can declare `let` or `const` variables at the top level of `<script>`. They are included in the component's context, so they're available in template bindings and inside `$runtime`:
+
+```html
+<script>
+    let log = "Hi";
+    const price = 42;
+
+    function $runtime() {
+        console.log(log); // "Hi"
+        self.querySelector(".price").textContent = price;
+    }
+</script>
+
+<template>
+    <p class="price">{log}: {price}</p>
+</template>
+```
+
+Top-level variables are scoped to the component and won't leak. A parent-passed attribute with the same name takes precedence over the declared value.
+
 ## Top-Level Functions
 
 You can declare helper functions at the top level of `<script>` and call them from inside `$runtime`. They are scoped to the component's runtime function and won't leak to other components.
