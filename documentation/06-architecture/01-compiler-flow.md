@@ -42,7 +42,7 @@ description: How the Chocola compiler works internally
 
 - Creates a DOM from the index file using linkedom's `parseHTML` (curly braces protected first)
 - Validates an `<app>` root element exists
-- Evaluates page-level conditionals (`if`/`mount:if`/`elif`/`else`) on the direct children of `<app>` — these run in a page context, not a component context
+- Evaluates page-level conditionals (`if`/`mount:if`/`elif`/`else`) on the children of `<app>` via `processPageConditionals` (defined in `compiler/index.js`, recursing into remaining descendants) — these run in a page context, not a component context
 - Extracts all descendant elements inside `<app>` for component processing
 - Extracts `<link>` elements (stylesheets, icons) for asset processing
 
@@ -55,7 +55,7 @@ For each element inside `<app>`:
 3. **Chain validation** — validates `if`/`elif`/`else`/`mount:if` structure on both slot content and component body separately, throwing with file location on violation
 4. **Template** — renders component body via a DOM fragment (linkedom)
 5. **Slots** — replaces `<slot>` elements with the original inner HTML
-6. **Attribute interpolation** — evaluates `{expr}` in attributes using `with(ctx)`
+6. **Interpolation** — evaluates `{expr}` in element attributes (reserved and `bind:` attributes excluded) using `with(ctx)`; text-node `{expr}` is interpolated separately by `interpolateNode` after conditionals
 7. **Conditionals** — evaluates `if`, `mount:if`, `elif`, `else` attributes
    - `if={expr}` — hides element (`display: none`) when falsy
    - `mount:if={expr}` — removes element when falsy
@@ -70,7 +70,7 @@ For each element inside `<app>`:
    - `<void else>` — chain-aware fallback
    - `<void>` — always renders children unwrapped (fragment-like)
 9. **Import scanning** — scans component `<script>` for `import X from "./Y.html"` statements. For each match, resolves the imported component by basename, calls `generateCSRClass()` to produce a CSR subclass for it, and strips the import line from the script.
-10. **Runtime ID** — if the component has a `<script>` and a single root element, assigns a unique `chid` attribute
+10. **Runtime ID** — if the component has a `<script>` and at least one element root, assigns a unique `chid` attribute to the first element root
 11. **CSS Scoping** — every component gets a deterministic hash class on its root element derived from the component filename. If the component has `<style>`, the selectors are rewritten under that class:
     - Simple selectors (`.foo`) generate both AND-scoped (`.cssId.foo`) and descendant-scoped (`.cssId .foo`) variants
     - Selectors with combinators use descendant scoping only
@@ -105,6 +105,7 @@ The class name respects the original import casing when triggered by an `import`
 - **Stylesheets** — copies local CSS files to output with random filenames, updates `<link>` hrefs
 - **Icons** — copies icon files to output
 - **Scoped CSS** — writes component-scoped CSS to `sc-<random>.css`, appends `<link>` to document head
+- **Scripts** — copies local `<script src>` files to output with random filenames and rewrites the `src` attribute (preserving inline content and other attributes)
 - **Static assets** — copies the `src/static/` directory to the output directory
 
 ### 8. Output (`compiler/dom-processor.js`)
