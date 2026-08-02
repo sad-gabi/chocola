@@ -69,23 +69,33 @@ You can declare `let` or `const` variables at the top level of `<script>`. They 
 
 Top-level variables are scoped to the component and won't leak. A parent-passed attribute with the same name takes precedence over the declared value.
 
-## Top-Level Functions
+## Top-Level Functions and Variables
 
-You can declare helper functions at the top level of `<script>` and call them from inside `$runtime`. They are scoped to the component's runtime function and won't leak to other components.
+You can declare functions and variables at the top level of `<script>` and call them everywhere in the component. They are scoped to the component's runtime function and won't leak to other components.
 
 ```html
 <script>
+    export let price = 58.645;
+
     let self;
+    let priceTag;
+    let btn;
 
     function format(n) {
         return n.toFixed(2);
     }
 
     function $runtime() {
-        const el = self.querySelector(".price");
-        if (el) el.textContent = format(ctx.price);
+        btn.addEventlistener("click", () => {
+            format(price * 0.85)
+        });
     }
 </script>
+
+<template>
+    <span bind:self="priceTag">{format(price)}</span>
+    <button bind:self="btn">Apply discount</button>
+</template>
 ```
 
 This keeps your runtime logic clean by extracting reusable logic into named functions.
