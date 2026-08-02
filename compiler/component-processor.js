@@ -1,12 +1,12 @@
 import path from "path";
 import { parseHTML } from "linkedom";
 import { protectCurlyBraces } from "../utils.js";
-import { genRandomId, incrementAlfabet, throwError, deterministicHash } from "./utils.js";
+import { genRandomId, incrementAlfabet, throwError, deterministicHash, warnConstantCondition, findElementLine } from "./utils.js";
 import {
   extractPropsDefaults, extractRuntime, extractTopLevelFunctions, extractTopLevelVariables,
   extractCtxFromEl, hasMountIf, getMountIf,
   reservedAttrs, validateChainStructure, applyConditionalToElement, interpolateNode,
-  scopeCss, compileExpr,
+  scopeCss, compileExpr, evaluateConstant,
 } from "../parser/index.js";
 import chalk from "./chalk.js";
 
@@ -252,6 +252,21 @@ export function processComponentElement(
   const elBindIds = new Map();
   let bindCounter = 0;
 
+  const conditionalLocations = new Map();
+  for (const { el } of childEntries) {
+    if (!el.hasAttribute("if") && !hasMountIf(el) && !el.hasAttribute("elif")) continue;
+    let location = sourceFile;
+    if (instance) {
+      const lineNum = findElementLine(instance, el.outerHTML);
+      if (lineNum !== null) location = `${compName}:${lineNum}`;
+    }
+    if (location === sourceFile && sourceContent) {
+      const lineNum = findElementLine(sourceContent, el.outerHTML);
+      if (lineNum !== null) location = `${sourceFile}:${lineNum}`;
+    }
+    conditionalLocations.set(el, location);
+  }
+
   childEntries.forEach(({ el: child, parent }) => {
     if (!condChains.has(parent)) {
       condChains.set(parent, { active: false, rendered: false });
@@ -262,6 +277,19 @@ export function processComponentElement(
     const hasDelIf = hasMountIf(child);
     const hasElif = child.hasAttribute("elif");
     const hasElse = child.hasAttribute("else");
+
+    if (hasIf || hasDelIf || hasElif) {
+      const location = conditionalLocations.get(child) || sourceFile;
+      const stripBraces = (raw) => raw.startsWith("{") ? raw.slice(1, -1) : raw;
+      const tag = child.tagName.toLowerCase();
+      const warnIfConstant = (expr, attr) => {
+        const { constant, value } = evaluateConstant(expr);
+        if (constant) warnConstantCondition(location, tag, attr, Boolean(value));
+      };
+      if (hasIf) warnIfConstant(stripBraces(child.getAttribute("if")), "if");
+      if (hasDelIf) warnIfConstant(stripBraces(getMountIf(child)), "mount:if");
+      if (hasElif) warnIfConstant(stripBraces(child.getAttribute("elif")), "elif");
+    }
 
     if (hasElif || hasElse) {
       if (!condChain.active) {

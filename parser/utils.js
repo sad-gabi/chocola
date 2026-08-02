@@ -14,3 +14,19 @@ export function compileExpr(expr, useCtx) {
   }
   return fn;
 }
+
+const constantEvalError = Symbol("constant-eval-error");
+
+export function evaluateConstant(expr) {
+  const trap = new Proxy({}, {
+    has() { return true; },
+    get() { throw constantEvalError; },
+  });
+  try {
+    const fn = compileExpr(expr, true);
+    const value = fn(trap);
+    return { constant: true, value };
+  } catch {
+    return { constant: false };
+  }
+}

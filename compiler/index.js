@@ -17,8 +17,8 @@ import {
 } from "./dom-processor.js";
 import { processAllComponents } from "./component-processor.js";
 import { generateRuntimeScript } from "./runtime-generator.js";
-import { genRandomId, throwError } from "./utils.js";
-import { compileExpr, hasMountIf, getMountIf, removeMountIf } from "../parser/index.js";
+import { genRandomId, throwError, warnConstantCondition, findElementLine } from "./utils.js";
+import { compileExpr, evaluateConstant, hasMountIf, getMountIf, removeMountIf } from "../parser/index.js";
 import {
   copyStaticDir,
   getComponents,
@@ -113,30 +113,22 @@ async function processAssets(doc, rootDir, srcDir, outDirPath) {
   return cssContents
 }
 
-function normalizeAttributeQuotes(html) {
-  return html.replace(/(\s[\w:.-]+)=(['"])([\s\S]*?)\2/g, '$1="$3"');
-}
-
-function findElementLine(sourceContent, outerHTML) {
-  const source = normalizeAttributeQuotes(sourceContent);
-  const candidates = [
-    outerHTML,
-    outerHTML.replace(/=""/g, ""),
-    outerHTML.replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"),
-  ];
-  for (const candidate of candidates) {
-    const idx = source.indexOf(candidate);
-    if (idx !== -1) {
-      return source.substring(0, idx).split("\n").length;
-    }
-  }
-  return null;
-}
-
 function processPageConditionals(parent, sourceFile, sourceContent) {
   const children = [...parent.children];
   let chainActive = false;
   let chainRendered = false;
+
+  const getLocation = (child) => {
+    if (!sourceContent) return sourceFile;
+    const lineNum = findElementLine(sourceContent, child.outerHTML);
+    return lineNum !== null ? `${sourceFile}:${lineNum}` : sourceFile;
+  };
+
+  const warnIfConstant = (expr, child, attr) => {
+    const { constant, value } = evaluateConstant(expr);
+    if (!constant) return;
+    warnConstantCondition(getLocation(child), child.tagName.toLowerCase(), attr, Boolean(value));
+  };
 
   for (const child of children) {
     const hasIf = child.hasAttribute("if");
@@ -144,16 +136,18 @@ function processPageConditionals(parent, sourceFile, sourceContent) {
     const hasElif = child.hasAttribute("elif");
     const hasElse = child.hasAttribute("else");
 
+    if (hasIf || hasDelIf || hasElif) {
+      const stripBraces = (raw) => raw.startsWith("{") ? raw.slice(1, -1) : raw;
+      if (hasIf) warnIfConstant(stripBraces(child.getAttribute("if")), child, "if");
+      if (hasDelIf) warnIfConstant(stripBraces(getMountIf(child)), child, "mount:if");
+      if (hasElif) warnIfConstant(stripBraces(child.getAttribute("elif")), child, "elif");
+    }
+
     if (hasElif || hasElse) {
       if (!chainActive) {
         const tag = child.tagName.toLowerCase();
         const attr = hasElif ? "elif" : "else";
-        let loc = sourceFile;
-        if (sourceContent) {
-          const lineNum = findElementLine(sourceContent, child.outerHTML);
-          if (lineNum !== null) loc = `${sourceFile}:${lineNum}`;
-        }
-        throwError(`${loc}\n    <${tag}> has ${attr} without a preceding if/mount:if sibling`);
+        throwError(`${getLocation(child)}\n    <${tag}> has ${attr} without a preceding if/mount:if sibling`);
       }
       if (chainRendered) { child.remove(); continue; }
     }
