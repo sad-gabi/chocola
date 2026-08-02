@@ -265,7 +265,7 @@ export function processComponentElement(
 
     if (hasElif || hasElse) {
       if (!condChain.active) {
-        throwError(`${instance.__sourceFile || compName}: <${child.tagName.toLowerCase()}> has ${hasElif ? "elif" : "else"} without a preceding if/del-if sibling`);
+        throwError(`${instance.__sourceFile || compName}: <${child.tagName.toLowerCase()}> has ${hasElif ? "elif" : "else"} without a preceding if/mount:if sibling`);
       }
       if (condChain.rendered) {
         child.remove();

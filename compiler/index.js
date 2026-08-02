@@ -113,7 +113,27 @@ async function processAssets(doc, rootDir, srcDir, outDirPath) {
   return cssContents
 }
 
-function processPageConditionals(parent) {
+function normalizeAttributeQuotes(html) {
+  return html.replace(/(\s[\w:.-]+)=(['"])([\s\S]*?)\2/g, '$1="$3"');
+}
+
+function findElementLine(sourceContent, outerHTML) {
+  const source = normalizeAttributeQuotes(sourceContent);
+  const candidates = [
+    outerHTML,
+    outerHTML.replace(/=""/g, ""),
+    outerHTML.replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"),
+  ];
+  for (const candidate of candidates) {
+    const idx = source.indexOf(candidate);
+    if (idx !== -1) {
+      return source.substring(0, idx).split("\n").length;
+    }
+  }
+  return null;
+}
+
+function processPageConditionals(parent, sourceFile, sourceContent) {
   const children = [...parent.children];
   let chainActive = false;
   let chainRendered = false;
@@ -125,7 +145,16 @@ function processPageConditionals(parent) {
     const hasElse = child.hasAttribute("else");
 
     if (hasElif || hasElse) {
-      if (!chainActive) continue;
+      if (!chainActive) {
+        const tag = child.tagName.toLowerCase();
+        const attr = hasElif ? "elif" : "else";
+        let loc = sourceFile;
+        if (sourceContent) {
+          const lineNum = findElementLine(sourceContent, child.outerHTML);
+          if (lineNum !== null) loc = `${sourceFile}:${lineNum}`;
+        }
+        throwError(`${loc}\n    <${tag}> has ${attr} without a preceding if/mount:if sibling`);
+      }
       if (chainRendered) { child.remove(); continue; }
     }
 
@@ -176,7 +205,7 @@ function processPageConditionals(parent) {
     }
 
     if (child.parentNode) {
-      processPageConditionals(child);
+      processPageConditionals(child, sourceFile, sourceContent);
     }
   }
 }
@@ -202,7 +231,7 @@ export default async function compile(rootDir, buildConfig) {
   const doc = dom.document;
   const appContainer = validateAppContainer(doc);
 
-  processPageConditionals(appContainer);
+  processPageConditionals(appContainer, pageSourcePath, dom.protectedContent);
 
   const appElements = getAppElements(appContainer);
   const { runtimeScript, scopesCss, hashMap, csrClasses } = processAllComponents(appElements, loadedComponents, pageSourcePath, srcIndexContent);

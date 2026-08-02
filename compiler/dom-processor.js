@@ -6,7 +6,10 @@ import { throwError } from "./utils.js";
 import { readMyFile } from "./fs.js";
 
 export function createDOM(srcIndexContent) {
-  return parseHTML(protectCurlyBraces(srcIndexContent));
+  const protectedContent = protectCurlyBraces(srcIndexContent);
+  const dom = parseHTML(protectedContent);
+  dom.protectedContent = protectedContent;
+  return dom;
 }
 
 export function validateAppContainer(doc) {

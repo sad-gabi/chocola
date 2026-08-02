@@ -40,7 +40,7 @@ export function validateChainStructure(parent, sourceFile, sourceContent, parent
             if (lineNum !== null) loc = `${sourceFile}:${lineNum}`;
           }
         }
-        throw new Error(`${loc}\n    <${tag}> has ${attr} without a preceding if/del-if sibling`);
+        throw new Error(`${loc}\n    <${tag}> has ${attr} without a preceding if/mount:if sibling`);
       }
       if (hasElse) {
         chainActive = false;
