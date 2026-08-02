@@ -14,6 +14,13 @@ export function warnConstantCondition(location, tag, attr, truthy) {
   );
 }
 
+export function warnUnusedDeclaration(location, kind, name) {
+  console.warn(
+    chalk.bold.yellow("WARNING!"),
+    `${location}: ${kind} \`${name}\` is never used`
+  );
+}
+
 function normalizeAttributeQuotes(html) {
   return html
     .replace(/(\s[\w:.-]+)=(['"])([\s\S]*?)\2/g, '$1="$3"')
@@ -50,7 +57,7 @@ function flexibleStartTagRegex(startTag) {
 }
 
 export function findElementLine(sourceContent, outerHTML) {
-  const source = normalizeAttributeQuotes(sourceContent).toLowerCase();
+  const source = normalizeAttributeQuotes(sourceContent).toLowerCase().replace(/\/\s*>/g, ">");
   const startTags = [
     normalizeAttributeQuotes(getStartTag(outerHTML)),
     normalizeAttributeQuotes(

@@ -1,7 +1,7 @@
 import path from "path";
 import { parseHTML } from "linkedom";
 import { protectCurlyBraces } from "../utils.js";
-import { genRandomId, incrementAlfabet, throwError, deterministicHash, warnConstantCondition, findElementLine } from "./utils.js";
+import { genRandomId, incrementAlfabet, throwError, deterministicHash, warnConstantCondition, warnUnusedDeclaration, findElementLine } from "./utils.js";
 import {
   extractPropsDefaults, extractRuntime, extractTopLevelFunctions, extractTopLevelVariables,
   extractCtxFromEl, hasMountIf, getMountIf,
@@ -24,6 +24,7 @@ class ProcessContext {
     this.scopedStyles = scopedStyles;
     this.staticCtxRegistry = staticCtxRegistry;
     this.csrClasses = csrClasses;
+    this.unusedWarned = new Set();
   }
 }
 
@@ -146,7 +147,91 @@ function generateCSRClass(compName, cx, explicitClassName) {
   cx.csrClasses.set(compName, classDef);
 }
 
+const BARE_IDENTIFIER_RE = /(?<![.\w$])[a-zA-Z_$][0-9a-zA-Z_$]*/g;
+const PROPERTY_IDENTIFIER_RE = /\.([a-zA-Z_$][0-9a-zA-Z_$]*)/g;
 
+function countIdentifiers(text, counts) {
+  for (const re of [BARE_IDENTIFIER_RE, PROPERTY_IDENTIFIER_RE]) {
+    re.lastIndex = 0;
+    for (const m of text.matchAll(re)) counts.set(m[1] ?? m[0], (counts.get(m[1] ?? m[0]) || 0) + 1);
+  }
+  return counts;
+}
+
+function escapeNameForRegex(name) {
+  return name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findLineInSource(source, regex) {
+  const match = regex.exec(source);
+  if (!match) return null;
+  return source.substring(0, match.index).split("\n").length;
+}
+
+function warnUnusedDeclarations(cx, compName, instance, script, fragment) {
+  if (!script && !fragment.querySelector("[bind\\:]")) return;
+  if (cx.unusedWarned.has(compName)) return;
+  cx.unusedWarned.add(compName);
+
+  const props = extractPropsDefaults(script).map(p => p.name);
+  const topVars = extractTopLevelVariables(script).map(v => v.name);
+  const topFuncs = extractTopLevelFunctions(script, RUNTIME_KW)
+    .map(src => src.match(/^(?:async\s+)?function\s+([a-zA-Z_$][0-9a-zA-Z_$]*)/)?.[1])
+    .filter(Boolean);
+
+  const bindings = [];
+  for (const el of fragment.querySelectorAll("*")) {
+    for (const attr of el.attributes) {
+      if (attr.name.startsWith("bind:")) bindings.push({ name: attr.value, element: el });
+    }
+  }
+
+  const counts = new Map();
+  if (script) countIdentifiers(script, counts);
+
+  const walk = (node) => {
+    if (node.nodeType === 3) {
+      for (const m of node.textContent.matchAll(/\{([^}]+)\}/g)) countIdentifiers(m[1], counts);
+      return;
+    }
+    if (node.attributes) {
+      for (const attr of node.attributes) {
+        if (attr.name.startsWith("bind:")) {
+          countIdentifiers(attr.value, counts);
+        } else {
+          for (const m of attr.value.matchAll(/\{([^}]+)\}/g)) countIdentifiers(m[1], counts);
+        }
+      }
+    }
+    for (const child of node.childNodes) walk(child);
+  };
+  walk(fragment);
+
+  const isUnused = (name) => (counts.get(name) || 0) <= 1;
+  const warn = (kind, name, declRegex) => {
+    const lineNum = findLineInSource(instance, declRegex);
+    warnUnusedDeclaration(lineNum !== null ? `${compName}:${lineNum}` : compName, kind, name);
+  };
+
+  for (const name of props) {
+    if (isUnused(name)) warn("prop", name, new RegExp("export\\s+let\\s+" + escapeNameForRegex(name) + "\\b"));
+  }
+  for (const name of topVars) {
+    if (isUnused(name)) warn("variable", name, new RegExp("(?:^|[^\\w])(?:let|const)\\s+" + escapeNameForRegex(name) + "\\b"));
+  }
+  for (const name of topFuncs) {
+    if (isUnused(name)) warn("function", name, new RegExp("(?:async\\s+)?function\\s+" + escapeNameForRegex(name) + "\\b"));
+  }
+  const seenBindings = new Set();
+  for (const { name, element } of bindings) {
+    if (seenBindings.has(name)) continue;
+    seenBindings.add(name);
+    if (isUnused(name)) {
+      const lineNum = findElementLine(instance, element.outerHTML);
+      warnUnusedDeclaration(lineNum !== null ? `${compName}:${lineNum}` : compName, "binding", name);
+    }
+  }
+}
 
 export function processComponentElement(
   element,
@@ -233,6 +318,8 @@ export function processComponentElement(
   });
 
   const fragment = parseFragment(template, doc);
+
+  warnUnusedDeclarations(cx, compName, instance, script, fragment);
 
   const slotFragment = parseFragment(elInnerHtml, doc);
   if (sourceFile) {
